@@ -1,0 +1,1143 @@
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+
+class ApiService {
+  private getAuthHeaders() {
+    const token = localStorage.getItem('token')
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': token ? `Bearer ${token}` : ''
+    }
+  }
+
+  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+    const url = `${API_BASE_URL}${endpoint}`
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        ...this.getAuthHeaders(),
+        ...options.headers
+      }
+    })
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        window.location.href = '/login'
+        throw new Error('Unauthorized')
+      }
+      if (response.status === 403) {
+        // Redirecionar para dashboard quando não tiver permissão
+        window.location.href = '/dashboard'
+        throw new Error('Forbidden')
+      }
+      // Tentar extrair mensagem amigável do backend
+      const contentType = response.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        try {
+          const data = await response.json()
+          const msg = Array.isArray(data?.message) ? data.message[0] : (data?.message || data?.error || '')
+          if (msg) throw new Error(msg)
+        } catch (_) {
+          // ignore parse errors
+        }
+      }
+      // Fallbacks por status
+      if (response.status === 409) {
+        throw new Error('Este e-mail ou subdomínio já está em uso. Tente outro.')
+      }
+      if (response.status === 400) {
+        throw new Error('Alguns dados estão inválidos. Revise os campos e tente novamente.')
+      }
+      throw new Error('Não foi possível concluir a solicitação. Tente novamente.')
+    }
+
+    return response.json()
+  }
+
+  // Método para requisições que esperam uma resposta de texto puro
+  private async requestText(endpoint: string, options: RequestInit = {}): Promise<string | null> {
+    const url = `${API_BASE_URL}${endpoint}`
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        ...this.getAuthHeaders(),
+        ...options.headers
+      }
+    })
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        window.location.href = '/login'
+        throw new Error('Unauthorized')
+      }
+      if (response.status === 403) {
+        // Redirecionar para dashboard quando não tiver permissão
+        window.location.href = '/dashboard'
+        throw new Error('Forbidden')
+      }
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    const text = await response.text()
+    return text === '' ? null : text
+  }
+
+  // Auth endpoints
+  async login(email: string, password: string) {
+    return this.request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    })
+  }
+
+  async register(data: any) {
+    return this.request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+
+  // Customers endpoints
+  async getCustomers() {
+    return this.request('/customers')
+  }
+
+  async createCustomer(data: any) {
+    return this.request('/customers', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updateCustomer(id: string, data: any) {
+    return this.request(`/customers/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async deleteCustomer(id: string) {
+    return this.request(`/customers/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // Pets endpoints
+  async getPets() {
+    return this.request('/pets')
+  }
+
+  async createPet(data: any) {
+    return this.request('/pets', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updatePet(id: string, data: any) {
+    return this.request(`/pets/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async deletePet(id: string) {
+    return this.request(`/pets/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // Appointments endpoints
+  async getAppointments() {
+    return this.request('/appointments')
+  }
+
+  async createAppointment(data: any) {
+    return this.request('/appointments', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updateAppointment(id: string, data: any) {
+    return this.request(`/appointments/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async deleteAppointment(id: string) {
+    return this.request(`/appointments/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // Services endpoints
+  async getServices() {
+    return this.request('/services')
+  }
+
+  async createService(data: any) {
+    return this.request('/services', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updateService(id: string, data: any) {
+    return this.request(`/services/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async deleteService(id: string) {
+    return this.request(`/services/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // Products endpoints
+  async getProducts() {
+    return this.request('/products')
+  }
+
+  async createProduct(data: any) {
+    return this.request('/products', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updateProduct(id: string, data: any) {
+    return this.request(`/products/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async deleteProduct(id: string) {
+    return this.request(`/products/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // Sales endpoints
+  async getSales() {
+    return this.request('/sales')
+  }
+
+  async createSale(data: any) {
+    return this.request('/sales', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updateSale(id: string, data: any) {
+    return this.request(`/sales/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async deleteSale(id: string) {
+    return this.request(`/sales/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // Dashboard stats
+  async getDashboardStats() {
+    return this.request('/dashboard/stats')
+  }
+
+  // Notifications endpoints
+  async getNotifications() {
+    return this.request('/notifications')
+  }
+
+  async getUnreadNotifications() {
+    return this.request('/notifications/unread')
+  }
+
+  async getUnreadCount() {
+    return this.request('/notifications/unread/count')
+  }
+
+  async markNotificationAsRead(id: string) {
+    return this.request(`/notifications/${id}/read`, {
+      method: 'PATCH'
+    })
+  }
+
+  async markAllNotificationsAsRead() {
+    return this.request('/notifications/read/all', {
+      method: 'PATCH'
+    })
+  }
+
+  async deleteNotification(id: string) {
+    return this.request(`/notifications/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // Auth endpoints
+  async getCurrentUser() {
+    return this.request('/auth/me')
+  }
+
+  async getAllPermissions() {
+    return this.request('/permissions/all')
+  }
+
+  async getAllRoles() {
+    return this.request('/permissions/roles')
+  }
+
+  async assignPermissionsToUser(userId: string, permissions: string[]) {
+    return this.request(`/permissions/users/${userId}/permissions`, {
+      method: 'POST',
+      body: JSON.stringify({ permissions })
+    })
+  }
+
+  async assignSidebarToUser(userId: string, sidebarItems: any[]) {
+    return this.request(`/permissions/users/${userId}/sidebar`, {
+      method: 'POST',
+      body: JSON.stringify({ sidebarItems })
+    })
+  }
+
+  // Settings endpoints
+  async updateSettings(settings: any) {
+    return this.request('/settings', {
+      method: 'PATCH',
+      body: JSON.stringify(settings)
+    })
+  }
+
+  async getSetting(key: string) {
+    return this.request(`/settings/${key}`)
+  }
+
+  async getSettingValue(key: string): Promise<string | null> {
+    return this.requestText(`/settings/${key}/value`)
+  }
+
+  async updateSetting(key: string, value: any) {
+    return this.request(`/settings/${key}/set`, {
+      method: 'POST',
+      body: JSON.stringify({ value })
+    })
+  }
+
+  // Admin endpoints
+  async getUsers() {
+    return this.request('/users')
+  }
+
+  async getAllUsers() {
+    return this.request('/users')
+  }
+
+  async getUserById(id: string) {
+    return this.request(`/users/${id}`)
+  }
+
+  async createUser(data: any) {
+    return this.request('/users', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updateUser(id: string, data: any) {
+    return this.request(`/users/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async deleteUser(id: string) {
+    return this.request(`/users/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  async uploadAvatar(id: string, formData: FormData) {
+    const token = localStorage.getItem('token')
+    const response = await fetch(`${API_BASE_URL}/users/${id}/avatar`, {
+      method: 'POST',
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : ''
+      },
+      body: formData
+    })
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('user')
+        window.location.href = '/login'
+        throw new Error('Unauthorized')
+      }
+      if (response.status === 403) {
+        // Redirecionar para dashboard quando não tiver permissão
+        window.location.href = '/dashboard'
+        throw new Error('Forbidden')
+      }
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+
+    return response.json()
+  }
+
+  // Medical Records endpoints
+  async getMedicalRecords() {
+    return this.request('/medical-records')
+  }
+
+  async createMedicalRecord(data: any) {
+    return this.request('/medical-records', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updateMedicalRecord(id: string, data: any) {
+    return this.request(`/medical-records/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async deleteMedicalRecord(id: string) {
+    return this.request(`/medical-records/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // Suppliers endpoints
+  async getSuppliers() {
+    return this.request('/suppliers')
+  }
+
+  async createSupplier(data: any) {
+    return this.request('/suppliers', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updateSupplier(id: string, data: any) {
+    return this.request(`/suppliers/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async deleteSupplier(id: string) {
+    return this.request(`/suppliers/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // Communications endpoints
+  async getCommunicationHistory() {
+    return this.request('/communications/history')
+  }
+
+  async getCommunications(params?: any) {
+    const queryString = params ? `?${new URLSearchParams(params).toString()}` : ''
+    return this.request(`/communications${queryString}`)
+  }
+
+  async getCommunicationById(id: string) {
+    return this.request(`/communications/${id}`)
+  }
+
+  async sendPromotionalMessage(customerIds: string[], message: string) {
+    return this.request('/communications/promotional', {
+      method: 'POST',
+      body: JSON.stringify({ customerIds, message })
+    })
+  }
+
+  async sendBirthdayMessage(customerId: string) {
+    return this.request('/communications/birthday', {
+      method: 'POST',
+      body: JSON.stringify({ customerId })
+    })
+  }
+
+  async sendAppointmentReminder(appointmentId: string) {
+    return this.request('/communications/appointment-reminder', {
+      method: 'POST',
+      body: JSON.stringify({ appointmentId })
+    })
+  }
+
+  async scheduleMessage(data: any) {
+    return this.request('/communications/schedule', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async getCommunicationStats(startDate: string, endDate: string) {
+    return this.request(`/communications/stats?startDate=${startDate}&endDate=${endDate}`)
+  }
+
+  // Financial Reports endpoints
+  async getRevenueReport(startDate: string, endDate: string) {
+    return this.request(`/financial-reports/revenue?startDate=${startDate}&endDate=${endDate}`)
+  }
+
+  async getExpensesReport(startDate: string, endDate: string) {
+    return this.request(`/financial-reports/expenses?startDate=${startDate}&endDate=${endDate}`)
+  }
+
+  async getProfitLossReport(startDate: string, endDate: string) {
+    return this.request(`/financial-reports/profit-loss?startDate=${startDate}&endDate=${endDate}`)
+  }
+
+  // Purchases endpoints
+  async getPurchases() {
+    return this.request('/purchases')
+  }
+
+  async createPurchase(data: any) {
+    return this.request('/purchases', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updatePurchase(id: string, data: any) {
+    return this.request(`/purchases/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updatePurchaseStatus(id: string, status: string) {
+    return this.request(`/purchases/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status })
+    })
+  }
+
+  async receivePurchase(id: string) {
+    return this.request(`/purchases/${id}/receive`, {
+      method: 'POST'
+    })
+  }
+
+  async deletePurchase(id: string) {
+    return this.request(`/purchases/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // Stock Alerts endpoints
+  async getStockAlerts() {
+    return this.request('/stock-alerts')
+  }
+
+  async getActiveStockAlerts() {
+    return this.request('/stock-alerts/active')
+  }
+
+  async createStockAlert(data: any) {
+    return this.request('/stock-alerts', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updateStockAlert(id: string, data: any) {
+    return this.request(`/stock-alerts/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async deleteStockAlert(id: string) {
+    return this.request(`/stock-alerts/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  async checkAndCreateAlerts() {
+    return this.request('/stock-alerts/check', {
+      method: 'POST'
+    })
+  }
+
+  // Inventory endpoints (novo sistema de estoque)
+  async getInventory(params?: {
+    onlyLowStock?: boolean;
+    onlyOutOfStock?: boolean;
+    supplierId?: string;
+    search?: string;
+  }) {
+    if (!params) {
+      return this.request('/inventory')
+    }
+    
+    const queryParams = new URLSearchParams()
+    if (params.onlyLowStock !== undefined) {
+      queryParams.append('onlyLowStock', String(params.onlyLowStock))
+    }
+    if (params.onlyOutOfStock !== undefined) {
+      queryParams.append('onlyOutOfStock', String(params.onlyOutOfStock))
+    }
+    if (params.supplierId) {
+      queryParams.append('supplierId', params.supplierId)
+    }
+    if (params.search) {
+      queryParams.append('search', params.search)
+    }
+    
+    const queryString = queryParams.toString()
+    return this.request(`/inventory${queryString ? `?${queryString}` : ''}`)
+  }
+
+  async getLowStockItems() {
+    return this.request('/inventory/low-stock')
+  }
+
+  async getInventoryStats() {
+    return this.request('/inventory/stats')
+  }
+
+  async getPurchaseOrderSuggestions(supplierId?: string) {
+    const queryString = supplierId ? `?supplierId=${supplierId}` : ''
+    return this.request(`/inventory/purchase-suggestions${queryString}`)
+  }
+
+  async adjustStock(productId: string, newStock: number, notes?: string) {
+    return this.request(`/inventory/${productId}/adjust`, {
+      method: 'POST',
+      body: JSON.stringify({ newStock, notes })
+    })
+  }
+
+  // Audit Logs endpoints
+  async getAuditLogs(filters?: {
+    userId?: string;
+    entity?: string;
+    action?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  }) {
+    const params = new URLSearchParams()
+    if (filters?.userId) params.append('userId', filters.userId)
+    if (filters?.entity) params.append('entity', filters.entity)
+    if (filters?.action) params.append('action', filters.action)
+    if (filters?.startDate) params.append('startDate', filters.startDate)
+    if (filters?.endDate) params.append('endDate', filters.endDate)
+    if (filters?.page) params.append('page', filters.page.toString())
+    if (filters?.limit) params.append('limit', filters.limit.toString())
+    
+    return this.request(`/audit-logs?${params.toString()}`)
+  }
+
+  async getAuditLogStats(startDate: string, endDate: string) {
+    return this.request(`/audit-logs/stats?startDate=${startDate}&endDate=${endDate}`)
+  }
+
+  async getRecentAuditLogs(limit: number = 10) {
+    return this.request(`/audit-logs/recent?limit=${limit}`)
+  }
+
+  // Backup endpoints
+  async createBackup() {
+    return this.request('/backup/create', {
+      method: 'POST'
+    })
+  }
+
+  async restoreBackup(backupData: any) {
+    return this.request('/backup/restore', {
+      method: 'POST',
+      body: JSON.stringify({ backupData })
+    })
+  }
+
+  async getBackups() {
+    return this.request('/backup/list')
+  }
+
+  async deleteBackup(filename: string) {
+    return this.request(`/backup/${filename}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // Admin endpoints
+  async getAdminDashboard() {
+    return this.request('/admin/dashboard')
+  }
+
+  async getAdminAnalytics() {
+    return this.request('/admin/analytics')
+  }
+
+  async getAllTenants() {
+    return this.request('/admin/tenants')
+  }
+
+  async getTenantById(id: string) {
+    return this.request(`/admin/tenants/${id}`)
+  }
+
+  async createTenant(data: { name: string; subdomain: string; isActive?: boolean }) {
+    return this.request('/admin/tenants', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updateTenant(id: string, data: { name?: string; subdomain?: string; isActive?: boolean }) {
+    return this.request(`/admin/tenants/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async deleteTenant(id: string) {
+    return this.request(`/admin/tenants/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  async getTenantData(tenantId: string) {
+    return this.request(`/admin/tenants/${tenantId}/data`)
+  }
+
+  async getTenantStats(tenantId: string) {
+    return this.request(`/admin/tenants/${tenantId}/stats`)
+  }
+
+  async getTrialStatus(tenantId: string) {
+    return this.request(`/tenants/${tenantId}/trial-status`)
+  }
+
+  // Roles endpoints
+  async getRoles() {
+    return this.request('/roles')
+  }
+
+  async getRoleById(id: string) {
+    return this.request(`/roles/${id}`)
+  }
+
+  async createRole(data: { name: string; description: string; permissions: string[]; sidebarItems: string[]; isActive?: boolean }) {
+    return this.request('/roles', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updateRole(id: string, data: { name?: string; description?: string; permissions?: string[]; sidebarItems?: string[]; isActive?: boolean }) {
+    return this.request(`/roles/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async deleteRole(id: string) {
+    return this.request(`/roles/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  async getRoleByUserRole(userRole: string) {
+    return this.request(`/roles/user/${userRole}`)
+  }
+
+  async getSidebarItems(userRole: string) {
+    return this.request(`/roles/sidebar/${userRole}`)
+  }
+
+  async getPermissions(userRole: string) {
+    return this.request(`/roles/permissions/${userRole}`)
+  }
+
+  async getUserPermissions(userId: string) {
+    // Se userId não for fornecido, usar endpoint do usuário atual
+    if (!userId) {
+      return this.request('/permissions/user')
+    }
+    return this.request(`/permissions/user/${userId}`)
+  }
+
+  async createDefaultRoles() {
+    return this.request('/roles/create-defaults', {
+      method: 'POST'
+    })
+  }
+
+  // Billing endpoints
+  async getBillingHistory() {
+    return this.request('/billing/history')
+  }
+
+  async getBillingInfo() {
+    return this.request('/billing/info')
+  }
+
+  async createBillingEntry(data: any) {
+    return this.request('/billing/create-entry', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updateBillingStatus(id: string, status: string, paidAt?: Date) {
+    return this.request(`/billing/update-status/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, paidAt })
+    })
+  }
+
+  async updateTenantPlan(plan: string, monthlyPrice: number) {
+    return this.request('/billing/update-plan', {
+      method: 'PATCH',
+      body: JSON.stringify({ plan, monthlyPrice })
+    })
+  }
+
+  async updateTenantBillingStatus(billingStatus: string) {
+    return this.request('/billing/update-billing-status', {
+      method: 'PATCH',
+      body: JSON.stringify({ billingStatus })
+    })
+  }
+
+  // Tickets endpoints
+  async getTickets() {
+    return this.request('/tickets')
+  }
+
+  async getTicketById(id: string) {
+    return this.request(`/tickets/${id}`)
+  }
+
+  async createTicket(data: any) {
+    return this.request('/tickets', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updateTicketStatus(id: string, status: string) {
+    return this.request(`/tickets/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status })
+    })
+  }
+
+  async assignTicket(id: string, assignedTo: string) {
+    return this.request(`/tickets/${id}/assign`, {
+      method: 'PATCH',
+      body: JSON.stringify({ assignedTo })
+    })
+  }
+
+  async addTicketMessage(id: string, data: any) {
+    return this.request(`/tickets/${id}/messages`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async getTicketMessages(id: string) {
+    return this.request(`/tickets/${id}/messages`)
+  }
+
+  async deleteTicket(id: string) {
+    return this.request(`/tickets/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // Admin Billing endpoints
+  async getAdminBillingOverview() {
+    return this.request('/admin/billing/overview')
+  }
+
+  async getAdminPendingPayments() {
+    return this.request('/admin/billing/pending')
+  }
+
+  async getAdminRevenueStats() {
+    return this.request('/admin/billing/revenue')
+  }
+
+  async suspendTenant(id: string) {
+    return this.request(`/admin/tenants/${id}/suspend`, {
+      method: 'PUT'
+    })
+  }
+
+  async activateTenant(id: string) {
+    return this.request(`/admin/tenants/${id}/activate`, {
+      method: 'PUT'
+    })
+  }
+
+  // Stock Movements endpoints
+  async createStockMovement(data: any) {
+    return this.request('/stock-movements', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async getStockMovements(filters?: any) {
+    const params = new URLSearchParams()
+    if (filters?.startDate) params.append('startDate', filters.startDate)
+    if (filters?.endDate) params.append('endDate', filters.endDate)
+    if (filters?.type) params.append('type', filters.type)
+    if (filters?.productId) params.append('productId', filters.productId)
+    
+    return this.request(`/stock-movements?${params.toString()}`)
+  }
+
+  async getStockMovementsByProduct(productId: string) {
+    return this.request(`/stock-movements/product/${productId}`)
+  }
+
+  async getStockReport() {
+    return this.request('/stock-movements/report')
+  }
+
+  // Cash Flow endpoints
+  async createCashFlowEntry(data: any) {
+    return this.request('/cash-flow', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async getCashFlowEntries(filters?: any) {
+    const params = new URLSearchParams()
+    if (filters?.startDate) params.append('startDate', filters.startDate)
+    if (filters?.endDate) params.append('endDate', filters.endDate)
+    if (filters?.type) params.append('type', filters.type)
+    if (filters?.category) params.append('category', filters.category)
+    
+    return this.request(`/cash-flow?${params.toString()}`)
+  }
+
+  async getCashFlowBalance(startDate?: string, endDate?: string) {
+    const params = new URLSearchParams()
+    if (startDate) params.append('startDate', startDate)
+    if (endDate) params.append('endDate', endDate)
+    
+    return this.request(`/cash-flow/balance?${params.toString()}`)
+  }
+
+  async getCashFlowReport(startDate: string, endDate: string) {
+    return this.request(`/cash-flow/report?startDate=${startDate}&endDate=${endDate}`)
+  }
+
+  async updateCashFlowEntry(id: string, data: any) {
+    return this.request(`/cash-flow/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async deleteCashFlowEntry(id: string) {
+    return this.request(`/cash-flow/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // Hotel - Quartos
+  async createHotelRoom(data: any) {
+    return this.request('/hotel/rooms', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async getHotelRooms() {
+    return this.request('/hotel/rooms')
+  }
+
+  async getAvailableRooms(checkIn: string, checkOut: string) {
+    return this.request(`/hotel/rooms/available?checkIn=${checkIn}&checkOut=${checkOut}`)
+  }
+
+  async updateHotelRoom(id: string, data: any) {
+    return this.request(`/hotel/rooms/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async deleteHotelRoom(id: string) {
+    return this.request(`/hotel/rooms/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  // Hotel - Reservas/Hospedagens
+  async createHotelBooking(data: any) {
+    return this.request('/hotel/bookings', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async getHotelBookings(filters?: any) {
+    const params = new URLSearchParams()
+    if (filters?.status) params.append('status', filters.status)
+    if (filters?.startDate) params.append('startDate', filters.startDate)
+    if (filters?.endDate) params.append('endDate', filters.endDate)
+    
+    return this.request(`/hotel/bookings?${params.toString()}`)
+  }
+
+  async getHotelBookingById(id: string) {
+    return this.request(`/hotel/bookings/${id}`)
+  }
+
+  async checkInHotel(id: string) {
+    return this.request(`/hotel/bookings/${id}/check-in`, {
+      method: 'PATCH'
+    })
+  }
+
+  async checkOutHotel(id: string, paymentData?: any) {
+    return this.request(`/hotel/bookings/${id}/check-out`, {
+      method: 'PATCH',
+      body: JSON.stringify(paymentData || {})
+    })
+  }
+
+  async cancelHotelBooking(id: string) {
+    return this.request(`/hotel/bookings/${id}/cancel`, {
+      method: 'PATCH'
+    })
+  }
+
+  async updateHotelBookingPayment(id: string, paymentData: any) {
+    return this.request(`/hotel/bookings/${id}/payment`, {
+      method: 'PATCH',
+      body: JSON.stringify(paymentData)
+    })
+  }
+
+  // Hotel - Relatórios Diários
+  async createHotelDailyReport(data: any) {
+    return this.request('/hotel/daily-reports', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async getHotelDailyReports(bookingId: string) {
+    return this.request(`/hotel/daily-reports/${bookingId}`)
+  }
+
+  async updateHotelDailyReport(id: string, data: any) {
+    return this.request(`/hotel/daily-reports/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  }
+
+  // Hotel - Serviços Extras
+  async addHotelServiceUsage(data: any) {
+    return this.request('/hotel/service-usage', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async getHotelServiceUsage(bookingId: string) {
+    return this.request(`/hotel/service-usage/${bookingId}`)
+  }
+
+  // Hotel - Estatísticas
+  async getHotelStats() {
+    return this.request('/hotel/stats')
+  }
+
+  // Sidebar Management
+  async updateUserSidebarItems(userId: string, sidebarItems: string[]) {
+    return this.request(`/users/${userId}/sidebar-items`, {
+      method: 'PUT',
+      body: JSON.stringify({ sidebarItems })
+    })
+  }
+
+  async updateRoleSidebarItems(roleId: string, sidebarItems: string[]) {
+    return this.request(`/roles/${roleId}/sidebar-items`, {
+      method: 'PATCH',
+      body: JSON.stringify({ sidebarItems })
+    })
+  }
+
+  async updateTenantModules(tenantId: string, modules: string[]) {
+    return this.request(`/tenants/${tenantId}/modules`, {
+      method: 'PATCH',
+      body: JSON.stringify({ modules })
+    })
+  }
+
+  // Personalization endpoints
+  async getPersonalizationSettings() {
+    return this.request('/settings/personalization')
+  }
+
+  async updatePersonalizationSettings(settings: any) {
+    return this.request('/settings/personalization', {
+      method: 'PATCH',
+      body: JSON.stringify(settings)
+    })
+  }
+
+  async uploadImage(file: File, category: string, metadata?: any) {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('category', category)
+    if (metadata) {
+      formData.append('metadata', JSON.stringify(metadata))
+    }
+    
+    return this.request('/images/upload', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        // Remove Content-Type header to let browser set it with boundary
+      }
+    })
+  }
+
+  async getImageUrl(imageId: string) {
+    const token = localStorage.getItem('token')
+    return `${API_BASE_URL}/images/${imageId}?token=${token}`
+  }
+
+  async getImageByCategory(category: string) {
+    const token = localStorage.getItem('token')
+    return `${API_BASE_URL}/images/category/${category}/active?token=${token}`
+  }
+}
+
+export const apiService = new ApiService()
+

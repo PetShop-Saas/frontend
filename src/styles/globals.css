@@ -1,0 +1,640 @@
+@import 'antd/dist/reset.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --primary-color: #16a34a;
+    --secondary-color: #15803d;
+    --sidebar-color: #064e3b;
+    --header-color: #ffffff;
+    --border-radius: 8px;
+    --font-size: 14px;
+    --font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  html {
+    font-family: var(--font-family);
+    font-size: var(--font-size);
+  }
+  
+  body {
+    font-family: var(--font-family);
+    font-size: var(--font-size);
+    font-weight: 400;
+    line-height: 1.5;
+    color: #374151;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-family);
+    font-weight: 600;
+    line-height: 1.25;
+  }
+  
+  * {
+    box-sizing: border-box;
+  }
+  
+  /* Reset para garantir que não há espaçamentos indesejados */
+  #__next {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Transições suaves para mudanças de página */
+  .page-transition {
+    transition: opacity 0.2s ease-in-out, transform 0.2s ease-in-out;
+  }
+
+  .page-enter {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  .page-enter-active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .page-exit {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .page-exit-active {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  /* Loading state global */
+  .loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease-in-out, visibility 0.2s ease-in-out;
+  }
+
+  .loading-overlay.active {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f3f4f6;
+    border-top: 4px solid #059669;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  /* Otimizações para evitar reflows */
+  .ant-layout {
+    will-change: auto;
+  }
+
+  .ant-layout-sider {
+    will-change: auto;
+  }
+
+  .ant-layout-content {
+    will-change: auto;
+  }
+
+  /* Prevenção de layout shift */
+  .page-transition {
+    contain: layout style paint;
+  }
+
+  /* Header fixo para evitar reflows */
+  .ant-layout-header {
+    position: fixed !important;
+    top: 0 !important;
+    z-index: 1000 !important;
+    width: calc(100% - 256px) !important;
+    transition: left 0.2s ease-in-out !important;
+    transform: translateZ(0) !important;
+    backface-visibility: hidden !important;
+  }
+
+  .ant-layout-header.collapsed {
+    width: calc(100% - 80px) !important;
+  }
+
+  /* Garantir que o header nunca desapareça */
+  .ant-layout-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: inherit;
+    z-index: -1;
+  }
+
+  /* Conteúdo com padding fixo */
+  .ant-layout-content {
+    margin-top: 88px !important;
+    position: relative !important;
+    z-index: 1 !important;
+  }
+
+  /* Prevenção de reflow durante transições */
+  .ant-layout {
+    contain: layout !important;
+  }
+
+  .ant-layout-sider {
+    contain: layout !important;
+    overflow: auto !important;
+  }
+
+  /* Esconder completamente a barra de scroll da sidebar */
+  .ant-layout-sider {
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE and Edge */
+  }
+
+  .ant-layout-sider::-webkit-scrollbar {
+    display: none !important; /* Chrome, Safari, Opera */
+  }
+
+  /* Esconder scrollbar do menu também */
+  .ant-layout-sider .ant-menu {
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE and Edge */
+  }
+
+  .ant-layout-sider .ant-menu::-webkit-scrollbar {
+    display: none !important; /* Chrome, Safari, Opera */
+  }
+
+  /* Manter funcionalidade de scroll */
+  .ant-layout-sider .ant-menu {
+    overflow: auto !important;
+  }
+
+  .ant-layout-sider .ant-menu-vertical {
+    overflow: auto !important;
+  }
+
+  /* CSS específico para esconder scrollbar da sidebar customizada */
+  .custom-sidebar {
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE and Edge */
+  }
+
+  .custom-sidebar::-webkit-scrollbar {
+    display: none !important; /* Chrome, Safari, Opera */
+  }
+
+  .custom-sidebar .ant-menu {
+    scrollbar-width: none !important; /* Firefox */
+    -ms-overflow-style: none !important; /* IE and Edge */
+  }
+
+  .custom-sidebar .ant-menu::-webkit-scrollbar {
+    display: none !important; /* Chrome, Safari, Opera */
+  }
+
+  /* Tema do dropdown de configurações */
+  .custom-sidebar-menu .ant-menu-submenu > .ant-menu {
+    background: #064e3b !important;
+  }
+
+  .custom-sidebar-menu .ant-menu-submenu > .ant-menu .ant-menu-item {
+    background: #064e3b !important;
+    color: white !important;
+  }
+
+  .custom-sidebar-menu .ant-menu-submenu > .ant-menu .ant-menu-item:hover {
+    background: #047857 !important;
+    color: white !important;
+  }
+
+  .custom-sidebar-menu .ant-menu-submenu > .ant-menu .ant-menu-item-selected {
+    background: #047857 !important;
+    color: white !important;
+  }
+
+  /* Alinhamento básico dos ícones */
+  .custom-sidebar-menu .ant-menu-item-icon {
+    margin-right: 8px !important;
+  }
+
+  /* Ícone de expansão mais sutil */
+  .custom-sidebar-menu .ant-menu-submenu-arrow {
+    font-size: 10px !important;
+    opacity: 0.6 !important;
+    transition: all 0.2s ease !important;
+  }
+
+  .custom-sidebar-menu .ant-menu-submenu-arrow:hover {
+    opacity: 0.8 !important;
+  }
+  
+  /* Garantir que o layout principal não tenha margens */
+  .layout-container {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex: 1;
+  }
+  
+  /* Garantir que elementos flex não tenham gaps */
+  .flex {
+    gap: 0;
+  }
+  
+  /* Reset específico para o layout */
+  .h-screen.flex {
+    gap: 0;
+    margin: 0;
+    padding: 0;
+  }
+  
+  /* Garantir que não há gaps entre elementos flex */
+  .flex > * {
+    margin: 0;
+    padding: 0;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+  
+  .btn-primary {
+    @apply btn bg-green-600 text-white hover:bg-green-700 focus:ring-green-500;
+  }
+  
+  .btn-secondary {
+    @apply btn bg-gray-200 text-gray-900 hover:bg-gray-300 focus:ring-gray-500;
+  }
+  
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+  }
+  
+  .input {
+    @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm;
+  }
+  
+  .card {
+    @apply bg-white shadow rounded-lg;
+  }
+  
+  .card-header {
+    @apply px-6 py-4 border-b border-gray-200;
+  }
+  
+  .card-body {
+    @apply px-6 py-4;
+  }
+  
+  /* Tema verde escuro para componentes */
+  :root {
+    --primary-color: #047857;
+    --primary-hover: #059669;
+    --primary-light: #10b981;
+    --primary-dark: #064e3b;
+    --success-color: #10b981;
+    --warning-color: #f59e0b;
+    --error-color: #ef4444;
+    --info-color: #3b82f6;
+  }
+  
+  .theme-green {
+    --primary-color: #047857;
+    --primary-hover: #065f46;
+    --primary-light: #10b981;
+    --primary-dark: #064e3b;
+  }
+  
+  /* Estilos para botões primários com tema verde */
+  .btn-green {
+    @apply btn bg-green-600 text-white hover:bg-green-700 focus:ring-green-500;
+  }
+  
+  /* Estilos para inputs com tema verde */
+  .input-green {
+    @apply block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500 sm:text-sm;
+  }
+  
+  /* Estilos personalizados para sidebar */
+  .custom-sidebar-menu .ant-menu-item {
+    border-radius: 4px 0 0 4px !important;
+    margin: 4px 0 4px 8px !important;
+    height: 40px !important;
+    line-height: 40px !important;
+    position: relative !important;
+  }
+  
+  .custom-sidebar-menu .ant-menu-item:hover {
+    background-color: #047857 !important;
+    border-radius: 4px 0 0 4px !important;
+  }
+  
+  .custom-sidebar-menu .ant-menu-item-selected {
+    background-color: #059669 !important;
+    border-radius: 4px 0 0 4px !important;
+  }
+  
+  .custom-sidebar-menu .ant-menu-item-selected:hover {
+    background-color: #10b981 !important;
+  }
+  
+  /* Efeito de faixa para hover */
+  .custom-sidebar-menu .ant-menu-item:hover::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background-color: #10b981;
+    border-radius: 2px 0 0 2px;
+  }
+  
+  .custom-sidebar-menu .ant-menu-item-selected::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background-color: #10b981;
+    border-radius: 2px 0 0 2px;
+  }
+  
+  /* Aplicar fonte Inter para todos os componentes Ant Design */
+  .ant-typography {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  }
+  
+  .ant-menu {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  }
+  
+  .ant-menu-item {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 500 !important;
+  }
+  
+  .ant-btn {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 500 !important;
+  }
+  
+  .ant-input {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  }
+  
+  .ant-select {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  }
+  
+  .ant-select-selector {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  }
+  
+  .ant-table {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  }
+  
+  .ant-card {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  }
+  
+  .ant-card-head-title {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 600 !important;
+  }
+  
+  .ant-form-item-label > label {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 500 !important;
+  }
+  
+  .ant-modal-title {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 600 !important;
+  }
+  
+  .ant-dropdown-menu {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  }
+  
+  .ant-dropdown-menu-item {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-weight: 500 !important;
+  }
+  
+  .ant-badge {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  }
+  
+  .ant-avatar {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  }
+
+  /* Permitir scroll na landing page */
+  .landing-page {
+    overflow-y: auto !important;
+    height: auto !important;
+    min-height: 100vh;
+  }
+
+  /* Garantir que a landing page tenha scroll */
+  body.landing-page {
+    overflow-y: auto !important;
+    height: auto !important;
+  }
+
+  /* Scroll suave global */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Melhorar scroll suave para navegadores que não suportam nativamente */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
+  }
+
+  /* Fallback para navegadores mais antigos */
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  /* Estilos padronizados para Cards */
+  .ant-card {
+    border-radius: 8px !important;
+    box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05) !important;
+    transition: box-shadow 0.3s ease !important;
+  }
+
+  .ant-card:hover {
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important;
+  }
+
+  .ant-card-head {
+    background: #f9fafb !important;
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+
+  .ant-card-head-title {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    color: #111827 !important;
+  }
+
+  /* Estilos padronizados para Tabelas */
+  .custom-table .ant-table {
+    border-radius: 8px !important;
+  }
+
+  .custom-table .ant-table-thead > tr > th {
+    background: #f9fafb !important;
+    color: #374151 !important;
+    font-weight: 600 !important;
+    border-bottom: 2px solid #e5e7eb !important;
+  }
+
+  .custom-table .ant-table-tbody > tr:hover > td {
+    background: #f0fdf4 !important;
+  }
+
+  .custom-table .ant-table-tbody > tr > td {
+    border-bottom: 1px solid #f3f4f6 !important;
+  }
+
+  /* Estilos padronizados para Botões */
+  .ant-btn-primary {
+    background-color: var(--primary-color) !important;
+    border-color: var(--primary-color) !important;
+  }
+
+  .ant-btn-primary:hover {
+    background-color: var(--primary-hover) !important;
+    border-color: var(--primary-hover) !important;
+  }
+
+  .ant-btn-primary:active {
+    background-color: var(--primary-dark) !important;
+    border-color: var(--primary-dark) !important;
+  }
+
+  /* Estilos para Tags de Status */
+  .status-tag {
+    font-weight: 500 !important;
+    padding: 2px 8px !important;
+    border-radius: 4px !important;
+  }
+
+  /* Estilos para Modais */
+  .ant-modal-header {
+    background: #f9fafb !important;
+    border-bottom: 1px solid #e5e7eb !important;
+  }
+
+  .ant-modal-title {
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    color: #111827 !important;
+  }
+
+  /* Estilos para Forms */
+  .ant-form-item-label > label {
+    font-weight: 500 !important;
+    color: #374151 !important;
+  }
+
+  .ant-input, .ant-select-selector, .ant-picker {
+    border-radius: 6px !important;
+  }
+
+  .ant-input:focus, .ant-select-selector:focus, .ant-picker:focus {
+    border-color: var(--primary-color) !important;
+    box-shadow: 0 0 0 2px rgba(4, 120, 87, 0.1) !important;
+  }
+
+  /* Estilos para Tabs */
+  .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab {
+    border-radius: 8px 8px 0 0 !important;
+    background: #f3f4f6 !important;
+    border-color: #e5e7eb !important;
+  }
+
+  .ant-tabs-card > .ant-tabs-nav .ant-tabs-tab-active {
+    background: #ffffff !important;
+    border-bottom-color: #ffffff !important;
+  }
+
+  .ant-tabs-tab:hover {
+    color: var(--primary-color) !important;
+  }
+
+  .ant-tabs-tab-active {
+    color: var(--primary-color) !important;
+  }
+
+  .ant-tabs-ink-bar {
+    background: var(--primary-color) !important;
+  }
+
+  /* Estatísticas */
+  .ant-statistic-title {
+    font-size: 14px !important;
+    color: #6b7280 !important;
+    font-weight: 500 !important;
+  }
+
+  .ant-statistic-content-value {
+    font-weight: 600 !important;
+  }
+
+  /* Menu Grupos */
+  .ant-menu-item-group-title {
+    color: rgba(255, 255, 255, 0.45) !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.5px !important;
+    padding: 8px 16px !important;
+  }
+
+  .ant-menu-item-group-list {
+    padding: 0 !important;
+  }
+}
+
+

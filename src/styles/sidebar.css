@@ -1,0 +1,95 @@
+/* Estilos customizados para a sidebar */
+.custom-sidebar-menu .ant-menu-item {
+  color: rgba(255, 255, 255, 0.85) !important;
+  border-radius: 6px 0 0 6px !important;
+  margin: 4px 0 4px 8px !important;
+  transition: all 0.3s ease !important;
+}
+
+.custom-sidebar-menu .ant-menu-item:hover {
+  background-color: rgba(34, 197, 94, 0.3) !important;
+  color: #22c55e !important;
+  transform: translateX(2px) !important;
+}
+
+.custom-sidebar-menu .ant-menu-item-selected {
+  background-color: #16a34a !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.4) !important;
+  border-radius: 6px 0 0 6px !important;
+}
+
+.custom-sidebar-menu .ant-menu-item-selected:hover {
+  background-color: #15803d !important;
+  color: white !important;
+  transform: translateX(2px) !important;
+}
+
+.custom-sidebar-menu .ant-menu-submenu-title {
+  color: rgba(255, 255, 255, 0.85) !important;
+  border-radius: 6px 0 0 6px !important;
+  margin: 4px 0 4px 8px !important;
+  transition: all 0.3s ease !important;
+}
+
+.custom-sidebar-menu .ant-menu-submenu-title:hover {
+  background-color: rgba(34, 197, 94, 0.3) !important;
+  color: #22c55e !important;
+  transform: translateX(2px) !important;
+}
+
+.custom-sidebar-menu .ant-menu-submenu-selected .ant-menu-submenu-title {
+  background-color: #16a34a !important;
+  color: white !important;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.4) !important;
+  border-radius: 6px 0 0 6px !important;
+}
+
+.custom-sidebar-menu .ant-menu-submenu-selected .ant-menu-submenu-title:hover {
+  background-color: #15803d !important;
+  color: white !important;
+  transform: translateX(2px) !important;
+}
+
+/* Estilos para grupos de menu */
+.custom-sidebar-menu .ant-menu-item-group-title {
+  color: rgba(255, 255, 255, 0.6) !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  margin: 16px 8px 8px 16px !important;
+  padding: 0 !important;
+}
+
+/* Divisores */
+.custom-sidebar-menu .ant-menu-item-divider {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+  margin: 8px 16px !important;
+}
+
+/* Override completo do tema dark do Ant Design */
+.custom-sidebar-menu {
+  background: transparent !important;
+}
+
+.custom-sidebar-menu .ant-menu-item-group {
+  background: transparent !important;
+}
+
+.custom-sidebar-menu .ant-menu-submenu {
+  background: transparent !important;
+}
+
+.custom-sidebar-menu .ant-menu-submenu-popup {
+  background: #064e3b !important;
+}
+
+.custom-sidebar-menu .ant-menu-submenu-popup .ant-menu-item {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.custom-sidebar-menu .ant-menu-submenu-popup .ant-menu-item:hover {
+  background-color: rgba(34, 197, 94, 0.3) !important;
+  color: #22c55e !important;
+}

@@ -1,0 +1,133 @@
+stages:
+  - install
+  - lint
+  - test
+  - build
+  - deploy
+
+variables:
+  NODE_VERSION: "18"
+
+cache:
+  paths:
+    - frontend/node_modules/
+    - frontend/.next/cache
+
+# Instalar dependências
+install:
+  stage: install
+  image: node:${NODE_VERSION}
+  script:
+    - cd frontend
+    - npm ci
+  only:
+    changes:
+      - frontend/**/*
+      - frontend/package*.json
+
+# Linting
+lint:
+  stage: lint
+  image: node:${NODE_VERSION}
+  script:
+    - cd frontend
+    - npm ci
+    - npm run lint
+  only:
+    changes:
+      - frontend/**/*.{ts,tsx,js,jsx}
+      - frontend/package.json
+
+# Type checking
+type_check:
+  stage: lint
+  image: node:${NODE_VERSION}
+  script:
+    - cd frontend
+    - npm ci
+    - npm run type-check
+  only:
+    changes:
+      - frontend/**/*.{ts,tsx}
+      - frontend/package.json
+
+# Testes
+test:
+  stage: test
+  image: node:${NODE_VERSION}
+  script:
+    - cd frontend
+    - npm ci
+    - npm run test:ci
+  coverage: '/Lines\s*:\s*(\d+\.\d+)%/'
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: frontend/coverage/cobertura-coverage.xml
+    paths:
+      - frontend/coverage/
+    expire_in: 1 week
+  only:
+    changes:
+      - frontend/**/*
+      - frontend/package*.json
+
+# Build
+build:
+  stage: build
+  image: node:${NODE_VERSION}
+  variables:
+    NEXT_PUBLIC_API_URL: $CI_PROJECT_URL
+  script:
+    - cd frontend
+    - npm ci
+    - npm run build
+  artifacts:
+    paths:
+      - frontend/.next/
+      - frontend/out/
+    expire_in: 1 hour
+  only:
+    changes:
+      - frontend/**/*
+      - frontend/package*.json
+
+# Deploy para produção
+deploy_production:
+  stage: deploy
+  image: node:${NODE_VERSION}
+  script:
+    - cd frontend
+    - npm ci
+    - npm run build
+    # Adicione aqui comandos para deploy
+    # Exemplo com Vercel:
+    # - npm i -g vercel
+    # - vercel --prod --token $VERCEL_TOKEN
+    # Ou com Docker:
+    # - docker build -t $CI_REGISTRY_IMAGE:latest .
+    # - docker push $CI_REGISTRY_IMAGE:latest
+  environment:
+    name: production
+    url: https://petshop.example.com
+  only:
+    - main
+    - master
+  when: manual
+
+# Deploy para staging
+deploy_staging:
+  stage: deploy
+  image: node:${NODE_VERSION}
+  script:
+    - cd frontend
+    - npm ci
+    - npm run build
+  environment:
+    name: staging
+    url: https://staging.petshop.example.com
+  only:
+    - develop
+  when: manual
+

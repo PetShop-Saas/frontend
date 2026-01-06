@@ -1,0 +1,24 @@
+# Env files
+.env
+.env.*
+*.env
+*.env.*
+!*.env.example
+
+# Local data
+uploads/
+coverage/
+.next/
+node_modules/
+dist/
+.turbo/
+.cache/
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDE/editor
+.vscode/
+.idea/

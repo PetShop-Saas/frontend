@@ -50,6 +50,9 @@ describe('ApiService', () => {
       ;(global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
         status: 401,
+        headers: {
+          get: jest.fn(() => null),
+        },
       })
 
       await expect(apiService.login('test@example.com', 'wrong')).rejects.toThrow('Unauthorized')
@@ -61,9 +64,12 @@ describe('ApiService', () => {
       ;(global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: false,
         status: 500,
+        headers: {
+          get: jest.fn(() => null),
+        },
       })
 
-      await expect(apiService.login('test@example.com', 'password')).rejects.toThrow('HTTP error! status: 500')
+      await expect(apiService.login('test@example.com', 'password')).rejects.toThrow('Não foi possível concluir a solicitação. Tente novamente.')
     })
   })
 

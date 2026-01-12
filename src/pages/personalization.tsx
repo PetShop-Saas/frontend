@@ -187,7 +187,24 @@ export default function Personalization() {
         })
       }
     } catch (error) {
+      console.error('Erro ao carregar configurações:', error)
+      message.error('Erro ao carregar configurações de personalização')
+    } finally {
+      setLoading(false)
+    }
+  }
 
+  const createUploadProps = (fieldName: string, category: string) => ({
+    name: 'file',
+    action: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'}/images/upload`,
+    headers: {
+      authorization: `Bearer ${typeof window !== 'undefined' ? localStorage.getItem('token') : ''}`,
+    },
+    data: {
+      category,
+    },
+    beforeUpload(file: File) {
+      const isValidType = file.type.startsWith('image/');
       if (!isValidType) {
         message.error('Apenas arquivos de imagem são permitidos!');
         return false;
@@ -223,7 +240,6 @@ export default function Personalization() {
         }
       } else if (info.file.status === 'error') {
         message.error(`${info.file.name} falha no upload.`)
-
       }
     },
     showUploadList: {
@@ -235,6 +251,74 @@ export default function Personalization() {
     multiple: false,
     withCredentials: false,
   })
+
+  const handleSave = async () => {
+    try {
+      setSaving(true)
+      const values = await form.validateFields()
+      
+      const settingsToSave = {
+        ...values,
+        ...settings
+      }
+      
+      await apiService.updatePersonalizationSettings(settingsToSave)
+      message.success('Personalizações salvas com sucesso!')
+      
+      // Disparar evento para atualizar outros componentes
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('personalizationUpdated', { detail: settingsToSave }))
+      }
+    } catch (error: any) {
+      console.error('Erro ao salvar:', error)
+      if (error.errorFields) {
+        message.error('Por favor, corrija os erros no formulário')
+      } else {
+        message.error('Erro ao salvar personalizações')
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handlePreview = () => {
+    setPreviewMode(!previewMode)
+    if (!previewMode) {
+      message.info('Modo preview ativado')
+    }
+  }
+
+  const handleReset = () => {
+    const defaultSettings: PersonalizationSettings = {
+      bannerUrl: '',
+      logoUrl: '',
+      bannerHeight: 80,
+      logoSize: 60,
+      primaryColor: '#16a34a',
+      secondaryColor: '#15803d',
+      sidebarColor: '#064e3b',
+      headerColor: '#ffffff',
+      borderRadius: 8,
+      fontSize: 14,
+      fontFamily: 'Inter, sans-serif',
+      sidebarCollapsed: false,
+      showBanner: true,
+      showLogo: true,
+      siteName: 'PetShop',
+      siteDescription: 'Sistema de gestão para petshops',
+      siteTagline: 'Cuidando do seu melhor amigo'
+    }
+    
+    form.setFieldsValue(defaultSettings)
+    setSettings(defaultSettings)
+    setColorPreview({
+      primaryColor: defaultSettings.primaryColor,
+      secondaryColor: defaultSettings.secondaryColor,
+      sidebarColor: defaultSettings.sidebarColor,
+      headerColor: defaultSettings.headerColor
+    })
+    message.success('Configurações resetadas para os valores padrão')
+  }
 
   if (loading) {
     return (

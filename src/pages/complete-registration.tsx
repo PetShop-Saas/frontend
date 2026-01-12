@@ -329,7 +329,20 @@ export default function CompleteRegistration() {
               </Row>
               <Row gutter={16}>
                 <Col span={24}>
-                  <Form.Item name="acceptTerms" valuePropName="checked">
+                  <Form.Item 
+                    name="acceptTerms" 
+                    valuePropName="checked"
+                    rules={[
+                      {
+                        validator: (_, value) => {
+                          if (value === true) {
+                            return Promise.resolve()
+                          }
+                          return Promise.reject(new Error('Você deve aceitar os termos de uso para continuar'))
+                        }
+                      }
+                    ]}
+                  >
                     <Checkbox>
                       Li e aceito os <a onClick={(e)=>{e.preventDefault(); setTermsOpen(true)}}>termos de uso</a> e a política de privacidade
                     </Checkbox>

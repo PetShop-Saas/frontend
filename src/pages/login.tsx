@@ -56,12 +56,12 @@ export default function Login() {
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="flex items-center justify-center mx-auto mb-4">
+            <div className="flex items-center justify-center mx-auto mb-6">
               <Image
                 src="/logo.png"
                 alt="PetFlow Logo"
-                width={64}
-                height={64}
+                width={80}
+                height={80}
                 className="rounded-lg"
                 priority
               />

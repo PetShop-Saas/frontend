@@ -66,12 +66,11 @@ export default function Home() {
                 <Image
                   src="/logo.png"
                   alt="PetFlow Logo"
-                  width={40}
-                  height={40}
+                  width={48}
+                  height={48}
                   className="rounded-lg"
                   priority
                 />
-                <span className="ml-3 text-xl font-bold text-gray-900">PetFlow</span>
               </div>
             </div>
             <div className="hidden md:flex items-center space-x-8">

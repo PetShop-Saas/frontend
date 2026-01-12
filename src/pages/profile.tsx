@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-
+import Image from 'next/image'
 import { apiService } from '../services/api'
 
 interface User {
@@ -183,10 +183,13 @@ export default function Profile() {
               <div className="flex items-center space-x-4">
                 <div className="flex-shrink-0">
                   {avatar ? (
-                    <img
+                    <Image
                       className="h-16 w-16 rounded-full object-cover"
                       src={avatar}
                       alt="Avatar"
+                      width={64}
+                      height={64}
+                      unoptimized
                     />
                   ) : (
                     <div className="h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">

@@ -26,6 +26,7 @@ export default function CashFlow() {
       return
     }
     loadData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, dateRange])
 
   const loadData = async () => {

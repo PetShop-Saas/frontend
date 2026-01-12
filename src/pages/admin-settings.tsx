@@ -75,6 +75,7 @@ export default function AdminSettings() {
       return;
     }
     loadSettings();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   const loadSettings = async () => {

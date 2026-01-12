@@ -264,6 +264,7 @@ export default function Products() {
     } else {
       loadProducts()
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab])
 
   const loadSuppliers = async () => {

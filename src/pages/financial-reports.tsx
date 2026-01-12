@@ -87,6 +87,8 @@ export default function FinancialReports() {
     }
 
     loadReport()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router])
   }, [router, dateRange, reportType])
 
   const loadReport = async () => {

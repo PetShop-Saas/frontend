@@ -57,6 +57,7 @@ export default function AuditLogs() {
     setStartDate(start.toISOString().split('T')[0])
 
     loadData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router])
 
   const loadData = async () => {
@@ -85,6 +86,7 @@ export default function AuditLogs() {
 
   useEffect(() => {
     loadData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, filterEntity, filterAction, filterUser, startDate, endDate])
 
   const getActionLabel = (action: string) => {

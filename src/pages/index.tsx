@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { 
   UserOutlined, 
+  HeartOutlined,
   CalendarOutlined, 
   ShoppingOutlined, 
   DollarOutlined, 

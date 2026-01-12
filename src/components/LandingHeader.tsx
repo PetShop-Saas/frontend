@@ -18,13 +18,13 @@ export default function LandingHeader({ showAuthButtons = true }: LandingHeaderP
             <Link href="/" className="flex-shrink-0 flex items-center">
               <Image
                 src="/logo.png"
-                alt="PetShop SaaS Logo"
+                alt="PetFlow Logo"
                 width={40}
                 height={40}
                 className="rounded-lg"
                 priority
               />
-              <span className="ml-3 text-xl font-bold text-gray-900">PetShop SaaS</span>
+              <span className="ml-3 text-xl font-bold text-gray-900">PetFlow</span>
             </Link>
           </div>
           

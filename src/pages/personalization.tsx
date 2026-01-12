@@ -83,7 +83,7 @@ export default function Personalization() {
     sidebarCollapsed: false,
     showBanner: true,
     showLogo: true,
-    siteName: 'PetShop',
+    siteName: 'PetFlow',
     siteDescription: 'Sistema de gestão para petshops',
     siteTagline: 'Cuidando do seu melhor amigo'
   })
@@ -305,7 +305,7 @@ export default function Personalization() {
       sidebarCollapsed: false,
       showBanner: true,
       showLogo: true,
-      siteName: 'PetShop',
+      siteName: 'PetFlow',
       siteDescription: 'Sistema de gestão para petshops',
       siteTagline: 'Cuidando do seu melhor amigo'
     }

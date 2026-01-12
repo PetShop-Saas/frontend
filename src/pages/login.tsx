@@ -59,7 +59,7 @@ export default function Login() {
             <div className="flex items-center justify-center mx-auto mb-4">
               <Image
                 src="/logo.png"
-                alt="PetShop SaaS Logo"
+                alt="PetFlow Logo"
                 width={64}
                 height={64}
                 className="rounded-lg"

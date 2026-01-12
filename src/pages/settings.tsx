@@ -118,7 +118,7 @@ export default function Settings() {
   const [saving, setSaving] = useState(false)
   const { loading: cepLoading, searchCep } = useCep(form)
   const [settings, setSettings] = useState<SettingsData>({
-    siteName: 'PetShop',
+    siteName: 'PetFlow',
     siteDescription: 'Sistema de gestão para petshops',
     contactEmail: '',
     contactPhone: '',
@@ -244,7 +244,7 @@ export default function Settings() {
 
   const handleReset = () => {
     setSettings({
-      siteName: 'PetShop',
+      siteName: 'PetFlow',
       siteDescription: 'Sistema de gestão para petshops',
       contactEmail: '',
       contactPhone: '',

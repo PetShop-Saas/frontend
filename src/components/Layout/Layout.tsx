@@ -418,7 +418,7 @@ export default function Layout({ children }: LayoutProps) {
           {tenantLogo ? (
             <Image 
               src={tenantLogo} 
-              alt={`Banner ${user?.tenant?.name || 'Petshop'}`}
+              alt={`Banner ${user?.tenant?.name || 'PetFlow'}`}
               width={collapsed ? 60 : 240}
               height={collapsed ? 60 : 80}
               unoptimized
@@ -447,7 +447,7 @@ export default function Layout({ children }: LayoutProps) {
               textAlign: 'center',
               padding: '8px'
             }}>
-              {collapsed ? 'PS' : (user?.tenant?.name || 'Petshop').toUpperCase()}
+              {collapsed ? 'PS' : (user?.tenant?.name || 'PetFlow').toUpperCase()}
             </div>
           )}
         </div>
@@ -637,5 +637,5 @@ function getPageTitle(pathname: string): string {
     '/settings': 'Configurações',
     '/profile': 'Perfil',
   }
-  return titles[pathname] || 'PetShop SaaS'
+  return titles[pathname] || 'PetFlow'
 }

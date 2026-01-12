@@ -449,7 +449,7 @@ export default function LayoutNew({ children }: LayoutProps) {
             fontWeight: 'bold',
           }}
         >
-          {collapsed ? 'PS' : user?.tenant?.name || 'PetShop'}
+          {collapsed ? 'PS' : user?.tenant?.name || 'PetFlow'}
         </div>
 
         <Menu

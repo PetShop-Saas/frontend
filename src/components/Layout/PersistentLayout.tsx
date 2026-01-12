@@ -350,7 +350,7 @@ export default function PersistentLayout({ children }: LayoutProps) {
       '/settings': 'Configurações',
       '/profile': 'Perfil',
     }
-    return titles[pathname] || 'PetShop SaaS'
+    return titles[pathname] || 'PetFlow'
   }
 
   return (
@@ -385,7 +385,7 @@ export default function PersistentLayout({ children }: LayoutProps) {
           {personalizationSettings.showBanner && personalizationSettings.bannerUrl ? (
             <Image 
               src={personalizationSettings.bannerUrl} 
-              alt={`Banner ${personalizationSettings.siteName || 'Petshop'}`}
+              alt={`Banner ${personalizationSettings.siteName || 'PetFlow'}`}
               width={collapsed ? 60 : 240}
               height={collapsed ? 60 : (personalizationSettings.bannerHeight || 80)}
               unoptimized
@@ -401,7 +401,7 @@ export default function PersistentLayout({ children }: LayoutProps) {
           ) : personalizationSettings.showLogo && personalizationSettings.logoUrl ? (
             <Image 
               src={personalizationSettings.logoUrl} 
-              alt={`Logo ${personalizationSettings.siteName || 'Petshop'}`}
+              alt={`Logo ${personalizationSettings.siteName || 'PetFlow'}`}
               width={collapsed ? 60 : 240}
               height={collapsed ? 60 : (personalizationSettings.bannerHeight || 80)}
               unoptimized

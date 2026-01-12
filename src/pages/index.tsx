@@ -64,13 +64,13 @@ export default function Home() {
               <div className="flex-shrink-0 flex items-center">
                 <Image
                   src="/logo.png"
-                  alt="PetShop SaaS Logo"
+                  alt="PetFlow Logo"
                   width={40}
                   height={40}
                   className="rounded-lg"
                   priority
                 />
-                <span className="ml-3 text-xl font-bold text-gray-900">PetShop SaaS</span>
+                <span className="ml-3 text-xl font-bold text-gray-900">PetFlow</span>
               </div>
             </div>
             <div className="hidden md:flex items-center space-x-8">
@@ -525,7 +525,7 @@ export default function Home() {
                 <div className="w-10 h-10 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg flex items-center justify-center">
                   <HeartOutlined className="text-white text-lg" />
                 </div>
-                <span className="ml-3 text-2xl font-bold text-white">PetShop SaaS</span>
+                <span className="ml-3 text-2xl font-bold text-white">PetFlow</span>
               </div>
               <p className="text-gray-400 text-lg max-w-md">
                 O sistema completo para gerenciar seu petshop ou clínica veterinária. 
@@ -572,7 +572,7 @@ export default function Home() {
           <div className="mt-16 border-t border-gray-700 pt-8">
             <div className="flex flex-col md:flex-row justify-between items-center">
               <p className="text-base text-gray-400">
-                &copy; 2024 PetShop SaaS. Todos os direitos reservados.
+                &copy; 2024 PetFlow. Todos os direitos reservados.
               </p>
               <div className="mt-4 md:mt-0 flex space-x-6">
                 <a href="#" className="text-gray-400 hover:text-green-400 transition-colors">Termos</a>

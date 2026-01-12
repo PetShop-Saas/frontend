@@ -37,7 +37,7 @@ export function usePersonalization() {
     sidebarCollapsed: false,
     showBanner: true,
     showLogo: true,
-    siteName: 'PetShop',
+    siteName: 'PetFlow',
     siteDescription: 'Sistema de gestão para petshops',
     siteTagline: 'Cuidando do seu melhor amigo'
   })

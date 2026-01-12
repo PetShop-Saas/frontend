@@ -129,7 +129,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             </div>
             {!collapsed && (
               <div>
-                <Text strong className="text-gray-900">PetShop</Text>
+                <Text strong className="text-gray-900">PetFlow</Text>
                 <div className="text-xs text-gray-500">Sistema de Gestão</div>
               </div>
             )}

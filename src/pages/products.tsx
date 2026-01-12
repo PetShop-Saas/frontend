@@ -253,6 +253,7 @@ export default function Products() {
 
     loadSuppliers()
     loadData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router, hasInventoryAccess])
 
   // Carregar dados quando a aba mudar

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Form, Input, Button, Card, Typography, message } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
 import LandingHeader from '../components/LandingHeader'
@@ -55,8 +56,15 @@ export default function Login() {
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-white text-2xl font-bold">PS</span>
+            <div className="flex items-center justify-center mx-auto mb-4">
+              <Image
+                src="/logo.png"
+                alt="PetShop SaaS Logo"
+                width={64}
+                height={64}
+                className="rounded-lg"
+                priority
+              />
             </div>
             <Title level={2} className="text-gray-800 mb-2">
               Entre na sua conta

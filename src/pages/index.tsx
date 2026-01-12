@@ -1,8 +1,8 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { 
   UserOutlined, 
-  HeartOutlined, 
   CalendarOutlined, 
   ShoppingOutlined, 
   DollarOutlined, 
@@ -62,9 +62,14 @@ export default function Home() {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <div className="flex-shrink-0 flex items-center">
-                <div className="w-10 h-10 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg flex items-center justify-center">
-                  <HeartOutlined className="text-white text-lg" />
-                </div>
+                <Image
+                  src="/logo.png"
+                  alt="PetShop SaaS Logo"
+                  width={40}
+                  height={40}
+                  className="rounded-lg"
+                  priority
+                />
                 <span className="ml-3 text-xl font-bold text-gray-900">PetShop SaaS</span>
               </div>
             </div>

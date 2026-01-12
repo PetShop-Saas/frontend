@@ -75,8 +75,8 @@ export default function LayoutNew({ children }: LayoutProps) {
       const itemsToUse = Array.isArray(sidebarItems) ? sidebarItems : []
       buildMenu(currentUser, itemsToUse)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sidebarItems, userFromHook, user, loading]) // buildMenu intencionalmente omitido
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sidebarItems, userFromHook, user, loading]) // buildMenu intencionalmente omitido para evitar loops
 
   const buildMenu = (userObj: any, sidebarItemsFromHook: string[] = []) => {
     // Usar SOMENTE os sidebarItems vindos do backend via hook

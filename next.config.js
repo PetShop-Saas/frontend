@@ -26,6 +26,14 @@ const nextConfig = {
     ],
     unoptimized: false,
   },
+  eslint: {
+    // Permite que o build continue mesmo com warnings do ESLint
+    ignoreDuringBuilds: false,
+  },
+  typescript: {
+    // Permite que o build continue mesmo com erros de tipo (se necessário)
+    ignoreBuildErrors: false,
+  },
   async rewrites() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
     return [

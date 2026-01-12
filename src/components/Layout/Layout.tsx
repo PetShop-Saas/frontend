@@ -83,8 +83,8 @@ export default function Layout({ children }: LayoutProps) {
       } catch (error) {
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // router intencionalmente omitido para evitar loops
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // router intencionalmente omitido para evitar loops infinitos
 
   useEffect(() => {
     // Carregar logo do tenant quando user estiver disponível

@@ -13,6 +13,19 @@ const nextConfig = {
   },
   // Desabilitar i18n para evitar erros de módulo não encontrado
   i18n: undefined,
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+      },
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
+    unoptimized: false,
+  },
   async rewrites() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
     return [

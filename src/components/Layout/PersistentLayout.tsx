@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
+import Image from 'next/image'
 import { Layout as AntLayout, Menu, Avatar, Dropdown, Button, Badge, Space, Typography } from 'antd'
 import { usePersonalization } from '../../hooks/usePersonalization'
 import { useGlobalPersonalization } from '../../hooks/useGlobalPersonalization'
@@ -382,29 +383,35 @@ export default function PersistentLayout({ children }: LayoutProps) {
           position: 'relative'
         }}>
           {personalizationSettings.showBanner && personalizationSettings.bannerUrl ? (
-            <img 
+            <Image 
               src={personalizationSettings.bannerUrl} 
               alt={`Banner ${personalizationSettings.siteName || 'Petshop'}`}
+              width={collapsed ? 60 : 240}
+              height={collapsed ? 60 : (personalizationSettings.bannerHeight || 80)}
+              unoptimized
               style={{ 
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
                 borderRadius: collapsed ? 4 : (personalizationSettings.borderRadius || 8)
               }} 
-              onError={(e) => {
+              onError={() => {
               }}
             />
           ) : personalizationSettings.showLogo && personalizationSettings.logoUrl ? (
-            <img 
+            <Image 
               src={personalizationSettings.logoUrl} 
               alt={`Logo ${personalizationSettings.siteName || 'Petshop'}`}
+              width={collapsed ? 60 : 240}
+              height={collapsed ? 60 : (personalizationSettings.bannerHeight || 80)}
+              unoptimized
               style={{ 
                 maxWidth: '100%',
                 maxHeight: '100%',
                 objectFit: 'contain',
                 borderRadius: collapsed ? 4 : (personalizationSettings.borderRadius || 8)
               }} 
-              onError={(e) => {
+              onError={() => {
               }}
             />
           ) : (

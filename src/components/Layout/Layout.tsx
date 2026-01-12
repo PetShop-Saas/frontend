@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
+import Image from 'next/image'
 import { Layout as AntLayout, Menu, Avatar, Dropdown, Button, Badge, Space, Typography } from 'antd'
 import { usePageTransition } from '../../hooks/usePageTransition'
 import { usePermissions } from '../../hooks/usePermissions'
@@ -82,7 +83,8 @@ export default function Layout({ children }: LayoutProps) {
       } catch (error) {
       }
     }
-  }, []) // Removido router da dependência para evitar loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // router intencionalmente omitido para evitar loops
 
   useEffect(() => {
     // Carregar logo do tenant quando user estiver disponível
@@ -414,16 +416,19 @@ export default function Layout({ children }: LayoutProps) {
           position: 'relative'
         }}>
           {tenantLogo ? (
-            <img 
+            <Image 
               src={tenantLogo} 
               alt={`Banner ${user?.tenant?.name || 'Petshop'}`}
+              width={collapsed ? 60 : 240}
+              height={collapsed ? 60 : 80}
+              unoptimized
               style={{ 
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
                 borderRadius: collapsed ? 4 : 8
               }} 
-              onError={(e) => {
+              onError={() => {
                 setTenantLogo('')
               }}
             />

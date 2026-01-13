@@ -22,28 +22,34 @@ import {
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [planPricings, setPlanPricings] = useState<any[]>([])
+  const [promotions, setPromotions] = useState<any[]>([])
   const [loadingPrices, setLoadingPrices] = useState(true)
 
   useEffect(() => {
-    // Buscar preços dos planos da API
-    const loadPlanPricings = async () => {
+    // Buscar preços dos planos e promoções da API
+    const loadData = async () => {
       try {
-        const prices = await apiService.getPublicPlanPricings()
+        const [prices, activePromotions] = await Promise.all([
+          apiService.getPublicPlanPricings(),
+          apiService.getPublicPromotions()
+        ])
         setPlanPricings(prices)
+        setPromotions(activePromotions)
       } catch (error) {
-        console.error('Erro ao carregar preços dos planos:', error)
+        console.error('Erro ao carregar dados:', error)
         // Usar preços padrão em caso de erro (sincronizados com o seed)
         setPlanPricings([
           { plan: 'BASIC', price: 59.9 },
           { plan: 'PRO', price: 129.9 },
           { plan: 'ENTERPRISE', price: 229.9 }
         ])
+        setPromotions([])
       } finally {
         setLoadingPrices(false)
       }
     }
 
-    loadPlanPricings()
+    loadData()
   }, [])
 
   useEffect(() => {
@@ -335,23 +341,94 @@ export default function Home() {
             <p className="mt-4 max-w-3xl text-xl text-gray-600 mx-auto">
               Planos flexíveis que crescem com seu negócio. Teste grátis por 30 dias em todos os planos.
             </p>
+            
+            {/* Exibir promoções ativas */}
+            {promotions.length > 0 && (
+              <div className="mt-6">
+                <div className="flex flex-wrap justify-center gap-3 mb-4">
+                  {promotions
+                    .filter(promo => promo.code) // Apenas cupons (com código)
+                    .map((promo) => {
+                      const planNames: Record<string, string> = {
+                        BASIC: 'Starter',
+                        PRO: 'Professional',
+                        ENTERPRISE: 'Enterprise',
+                      }
+                      const planName = promo.plan ? planNames[promo.plan] || promo.plan : 'Todos os planos'
+                      
+                      return (
+                        <div
+                          key={promo.id}
+                          className="bg-gradient-to-r from-yellow-400 to-orange-400 text-white px-6 py-3 rounded-full shadow-lg"
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-lg">🎫 Cupom: {promo.code}</span>
+                            <span className="text-sm">
+                              {promo.discountType === 'PERCENTAGE' 
+                                ? `${promo.discountValue}% OFF`
+                                : `${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(promo.discountValue)} OFF`
+                              }
+                            </span>
+                            <span className="text-xs bg-white/20 px-2 py-1 rounded">Válido para: {planName}</span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="mt-20 grid grid-cols-1 gap-8 lg:grid-cols-3">
             {/* Plano Starter (BASIC) */}
             {(() => {
               const basicPrice = planPricings.find(p => p.plan === 'BASIC')
+              // Buscar apenas promoções diretas (sem código) para este plano
+              const basicDirectPromo = promotions.find(p => !p.code && (!p.plan || p.plan === 'BASIC'))
               const basicPriceFormatted = basicPrice 
                 ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(basicPrice.price)
                 : 'R$ 59,90'
+              
+              // Calcular preço com desconto se houver promoção direta
+              let finalPrice = basicPrice?.price || 59.9
+              if (basicDirectPromo && basicPrice) {
+                if (basicDirectPromo.discountType === 'PERCENTAGE') {
+                  finalPrice = basicPrice.price * (1 - basicDirectPromo.discountValue / 100)
+                } else {
+                  finalPrice = Math.max(0, basicPrice.price - basicDirectPromo.discountValue)
+                }
+              }
+              const finalPriceFormatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(finalPrice)
+              
               return (
                 <div className="bg-white p-8 rounded-2xl border border-gray-200 hover:border-green-200 transition-colors duration-300">
                   <div className="text-center">
                     <h3 className="text-2xl font-bold text-gray-900">Starter</h3>
                     <p className="mt-2 text-gray-600">Perfeito para começar</p>
+                    {basicDirectPromo && (
+                      <div className="mt-2">
+                        <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                          🎁 {basicDirectPromo.name}
+                        </span>
+                      </div>
+                    )}
                     <div className="mt-6">
-                      <span className="text-5xl font-bold text-gray-900">{loadingPrices ? '...' : basicPriceFormatted}</span>
-                      <span className="text-gray-600">/mês</span>
+                      {basicDirectPromo ? (
+                        <>
+                          <div className="text-sm text-gray-500 line-through mb-1">
+                            {basicPriceFormatted}/mês
+                          </div>
+                          <div>
+                            <span className="text-5xl font-bold text-green-600">{loadingPrices ? '...' : finalPriceFormatted}</span>
+                            <span className="text-gray-600">/mês</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-5xl font-bold text-gray-900">{loadingPrices ? '...' : basicPriceFormatted}</span>
+                          <span className="text-gray-600">/mês</span>
+                        </>
+                      )}
                     </div>
                     <ul className="mt-8 space-y-4">
                       <li className="flex items-center">
@@ -389,9 +466,23 @@ export default function Home() {
             {/* Plano Professional (PRO) - Destaque */}
             {(() => {
               const proPrice = planPricings.find(p => p.plan === 'PRO')
+              // Buscar apenas promoções diretas (sem código) para este plano
+              const proDirectPromo = promotions.find(p => !p.code && (!p.plan || p.plan === 'PRO'))
               const proPriceFormatted = proPrice 
                 ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(proPrice.price)
                 : 'R$ 129,90'
+              
+              // Calcular preço com desconto se houver promoção direta
+              let finalPrice = proPrice?.price || 129.9
+              if (proDirectPromo && proPrice) {
+                if (proDirectPromo.discountType === 'PERCENTAGE') {
+                  finalPrice = proPrice.price * (1 - proDirectPromo.discountValue / 100)
+                } else {
+                  finalPrice = Math.max(0, proPrice.price - proDirectPromo.discountValue)
+                }
+              }
+              const finalPriceFormatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(finalPrice)
+              
               return (
                 <div className="bg-gradient-to-br from-green-600 to-emerald-600 p-8 rounded-2xl shadow-2xl transform scale-105 relative">
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
@@ -402,9 +493,30 @@ export default function Home() {
                   <div className="text-center text-white">
                     <h3 className="text-2xl font-bold">Professional</h3>
                     <p className="mt-2 text-green-100">Para petshops em crescimento</p>
+                    {proDirectPromo && (
+                      <div className="mt-2">
+                        <span className="bg-yellow-400 text-green-800 px-3 py-1 rounded-full text-xs font-bold">
+                          🎁 {proDirectPromo.name}
+                        </span>
+                      </div>
+                    )}
                     <div className="mt-6">
-                      <span className="text-5xl font-bold">{loadingPrices ? '...' : proPriceFormatted}</span>
-                      <span className="text-green-100">/mês</span>
+                      {proDirectPromo ? (
+                        <>
+                          <div className="text-sm text-green-200 line-through mb-1">
+                            {proPriceFormatted}/mês
+                          </div>
+                          <div>
+                            <span className="text-5xl font-bold text-yellow-300">{loadingPrices ? '...' : finalPriceFormatted}</span>
+                            <span className="text-green-100">/mês</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-5xl font-bold">{loadingPrices ? '...' : proPriceFormatted}</span>
+                          <span className="text-green-100">/mês</span>
+                        </>
+                      )}
                     </div>
                     <ul className="mt-8 space-y-4">
                   <li className="flex items-center">
@@ -446,17 +558,52 @@ export default function Home() {
             {/* Plano Enterprise */}
             {(() => {
               const enterprisePrice = planPricings.find(p => p.plan === 'ENTERPRISE')
+              // Buscar apenas promoções diretas (sem código) para este plano
+              const enterpriseDirectPromo = promotions.find(p => !p.code && (!p.plan || p.plan === 'ENTERPRISE'))
               const enterprisePriceFormatted = enterprisePrice 
                 ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(enterprisePrice.price)
                 : 'R$ 229,90'
+              
+              // Calcular preço com desconto se houver promoção direta
+              let finalPrice = enterprisePrice?.price || 229.9
+              if (enterpriseDirectPromo && enterprisePrice) {
+                if (enterpriseDirectPromo.discountType === 'PERCENTAGE') {
+                  finalPrice = enterprisePrice.price * (1 - enterpriseDirectPromo.discountValue / 100)
+                } else {
+                  finalPrice = Math.max(0, enterprisePrice.price - enterpriseDirectPromo.discountValue)
+                }
+              }
+              const finalPriceFormatted = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(finalPrice)
+              
               return (
                 <div className="bg-white p-8 rounded-2xl border border-gray-200 hover:border-green-200 transition-colors duration-300">
                   <div className="text-center">
                     <h3 className="text-2xl font-bold text-gray-900">Enterprise</h3>
                     <p className="mt-2 text-gray-600">Para grandes operações</p>
+                    {enterpriseDirectPromo && (
+                      <div className="mt-2">
+                        <span className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold">
+                          🎁 {enterpriseDirectPromo.name}
+                        </span>
+                      </div>
+                    )}
                     <div className="mt-6">
-                      <span className="text-5xl font-bold text-gray-900">{loadingPrices ? '...' : enterprisePriceFormatted}</span>
-                      <span className="text-gray-600">/mês</span>
+                      {enterpriseDirectPromo ? (
+                        <>
+                          <div className="text-sm text-gray-500 line-through mb-1">
+                            {enterprisePriceFormatted}/mês
+                          </div>
+                          <div>
+                            <span className="text-5xl font-bold text-green-600">{loadingPrices ? '...' : finalPriceFormatted}</span>
+                            <span className="text-gray-600">/mês</span>
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-5xl font-bold text-gray-900">{loadingPrices ? '...' : enterprisePriceFormatted}</span>
+                          <span className="text-gray-600">/mês</span>
+                        </>
+                      )}
                     </div>
                     <ul className="mt-8 space-y-4">
                   <li className="flex items-center">

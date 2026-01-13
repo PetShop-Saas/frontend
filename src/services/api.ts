@@ -951,6 +951,22 @@ class ApiService {
     return response.json()
   }
 
+  async getPublicPromotions(plan?: string) {
+    const url = `${API_BASE_URL}/pricing/public/promotions${plan ? `?plan=${plan}` : ''}`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error('Erro ao buscar promoções')
+    }
+
+    return response.json()
+  }
+
   async updateTenantBillingStatus(billingStatus: string) {
     return this.request('/billing/update-billing-status', {
       method: 'PATCH',

@@ -564,7 +564,7 @@ export default function PricingManagement() {
               min={0}
               step={0.01}
               formatter={(value) => `R$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={(value) => (value || '').replace(/R\$\s?|(,*)/g, '')}
+              parser={(value: any) => value!.replace(/R\$\s?|(,*)/g, '')}
             />
           </Form.Item>
 

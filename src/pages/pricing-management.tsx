@@ -124,8 +124,8 @@ export default function PricingManagement() {
         apiService.getAllPlanPricings(),
         apiService.getAllPromotions(),
       ])
-      setPlanPricings(pricingsData)
-      setPromotions(promotionsData)
+      setPlanPricings(pricingsData as PlanPricing[])
+      setPromotions(promotionsData as Promotion[])
     } catch (error: any) {
       message.error(error?.message || 'Erro ao carregar dados')
     } finally {
@@ -564,7 +564,7 @@ export default function PricingManagement() {
               min={0}
               step={0.01}
               formatter={(value) => `R$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={(value) => value!.replace(/R\$\s?|(,*)/g, '')}
+              parser={(value) => (value || '').replace(/R\$\s?|(,*)/g, '')}
             />
           </Form.Item>
 

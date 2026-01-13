@@ -810,11 +810,145 @@ class ApiService {
     })
   }
 
-  async updateTenantPlan(plan: string, monthlyPrice: number) {
+  async updateTenantPlan(plan: string, monthlyPrice?: number, transactionId?: string, promotionId?: string) {
     return this.request('/billing/update-plan', {
       method: 'PATCH',
-      body: JSON.stringify({ plan, monthlyPrice })
+      body: JSON.stringify({ plan, monthlyPrice, transactionId, promotionId })
     })
+  }
+
+  // Pricing endpoints
+  async getAllPlanPricings() {
+    return this.request('/pricing/plans')
+  }
+
+  async getActivePlanPricing(plan: string, date?: string) {
+    const query = date ? `?date=${date}` : ''
+    return this.request(`/pricing/plans/${plan}${query}`)
+  }
+
+  async createPlanPricing(data: {
+    plan: string
+    price: number
+    currency?: string
+    validFrom?: string
+    validUntil?: string
+    description?: string
+  }) {
+    return this.request('/pricing/plans', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updatePlanPricing(id: string, data: {
+    price?: number
+    validFrom?: string
+    validUntil?: string
+    description?: string
+    isActive?: boolean
+  }) {
+    return this.request(`/pricing/plans/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async deletePlanPricing(id: string) {
+    return this.request(`/pricing/plans/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  async getAllPromotions() {
+    return this.request('/pricing/promotions')
+  }
+
+  async getActivePromotions(plan?: string, date?: string) {
+    const params = new URLSearchParams()
+    if (plan) params.append('plan', plan)
+    if (date) params.append('date', date)
+    const query = params.toString() ? `?${params.toString()}` : ''
+    return this.request(`/pricing/promotions/active${query}`)
+  }
+
+  async getPromotionById(id: string) {
+    return this.request(`/pricing/promotions/${id}`)
+  }
+
+  async getPromotionByCode(code: string) {
+    return this.request(`/pricing/promotions/code/${code}`)
+  }
+
+  async createPromotion(data: {
+    name: string
+    description?: string
+    code?: string
+    discountType: 'PERCENTAGE' | 'FIXED_AMOUNT'
+    discountValue: number
+    planPricingId?: string
+    minMonths?: number
+    maxMonths?: number
+    validFrom: string
+    validUntil?: string
+    usageLimit?: number
+  }) {
+    return this.request('/pricing/promotions', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async updatePromotion(id: string, data: {
+    name?: string
+    description?: string
+    code?: string
+    discountType?: 'PERCENTAGE' | 'FIXED_AMOUNT'
+    discountValue?: number
+    planPricingId?: string
+    minMonths?: number
+    maxMonths?: number
+    validFrom?: string
+    validUntil?: string
+    usageLimit?: number
+    isActive?: boolean
+  }) {
+    return this.request(`/pricing/promotions/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async deletePromotion(id: string) {
+    return this.request(`/pricing/promotions/${id}`, {
+      method: 'DELETE'
+    })
+  }
+
+  async calculatePrice(plan: string, months: number, promotionCode?: string, date?: string) {
+    const params = new URLSearchParams()
+    params.append('plan', plan)
+    params.append('months', months.toString())
+    if (promotionCode) params.append('promotionCode', promotionCode)
+    if (date) params.append('date', date)
+    return this.request(`/pricing/calculate?${params.toString()}`)
+  }
+
+  // Public endpoint (no auth required)
+  async getPublicPlanPricings() {
+    const url = `${API_BASE_URL}/pricing/public/plans`
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error('Erro ao buscar preços dos planos')
+    }
+
+    return response.json()
   }
 
   async updateTenantBillingStatus(billingStatus: string) {

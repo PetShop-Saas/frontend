@@ -172,6 +172,9 @@ export const PermissionProvider = ({ children }: { children: React.ReactNode }) 
       '/audit-logs': '/audit-logs',
       '/backup': '/backup',
       '/settings': '/settings',
+      '/pricing-management': '/pricing-management',
+      '/admin-dashboard': '/admin-dashboard',
+      '/admin-billing': '/admin-billing',
     }
 
     const sidebarItem = routeToSidebarItem[pathname]

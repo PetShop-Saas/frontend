@@ -152,9 +152,7 @@ export const PlanBadge: React.FC = () => {
   const config = getPlanConfig()
 
   const handleClick = () => {
-    if (trialStatus.isFreeUser && trialStatus.plan !== 'ADMIN') {
-      router.push('/billing')
-    }
+    router.push('/billing')
   }
 
   return (

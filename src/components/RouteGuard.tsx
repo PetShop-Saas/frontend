@@ -8,7 +8,7 @@ interface RouteGuardProps {
 
 export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
   const router = useRouter()
-  const { checkRouteAccess, loading, sidebarItems } = usePermissions()
+  const { checkRouteAccess, loading, sidebarItems, user } = usePermissions()
 
   useEffect(() => {
     if (loading) {
@@ -19,6 +19,26 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
     const publicRoutes = ['/dashboard', '/login', '/', '/complete-registration', '/register']
     if (publicRoutes.includes(router.pathname)) {
       return
+    }
+
+    // Rotas admin que devem permitir acesso se o usuário for admin
+    const adminRoutes = ['/pricing-management', '/admin-dashboard', '/admin-billing', '/unified-access-management', '/personalization', '/audit-logs', '/backup', '/settings']
+    const isAdminRoute = adminRoutes.includes(router.pathname)
+    
+    if (isAdminRoute) {
+      const userDataStr = localStorage.getItem('user')
+      if (userDataStr) {
+        try {
+          const userData = JSON.parse(userDataStr)
+          const isAdmin = userData?.role === 'ADMIN' || userData?.planRole === 'ADMIN'
+          if (isAdmin) {
+            // Permitir acesso para admin mesmo se não estiver nos sidebarItems ainda
+            return
+          }
+        } catch (e) {
+          // Ignorar erro ao parsear
+        }
+      }
     }
 
     // Se os sidebarItems ainda não foram carregados (mas não está mais loading),
@@ -36,7 +56,8 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
                 // Verificar se a rota está no cache
                 if (cachedSidebarItems.includes(router.pathname)) {
                   return
-                } else {
+                } else if (!isAdminRoute) {
+                  // Se não for rota admin e não estiver no cache, redirecionar
                   router.push('/dashboard')
                   return
                 }
@@ -50,18 +71,27 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
         }
       }
       
-      // Se não há cache válido, bloquear acesso até carregar do backend
-      // Não redirecionar imediatamente, aguardar carregamento das permissões
-      return
+      // Se não há cache válido e não é rota admin, bloquear acesso até carregar do backend
+      // Não redirecionar imediatamente para rotas admin, aguardar carregamento das permissões
+      if (!isAdminRoute) {
+        return
+      }
     }
 
     // Verificar acesso normalmente
     const hasAccess = checkRouteAccess(router.pathname)
     
     if (!hasAccess) {
+      // Se for rota admin e usuário for admin, permitir acesso mesmo sem estar nos sidebarItems
+      if (isAdminRoute && user) {
+        const isAdmin = user.role === 'ADMIN' || user.planRole === 'ADMIN'
+        if (isAdmin) {
+          return
+        }
+      }
       router.push('/dashboard')
     }
-  }, [router.pathname, checkRouteAccess, loading, sidebarItems, router])
+  }, [router.pathname, checkRouteAccess, loading, sidebarItems, router, user])
 
   return <>{children}</>
 }

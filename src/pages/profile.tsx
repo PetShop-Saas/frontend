@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Image from 'next/image'
 import { apiService } from '../services/api'
+import { useCep } from '../hooks/useCep'
+import { formatPhone, formatCEP } from '../utils/formatting'
+import { Form, message } from 'antd'
 
 interface User {
   id: string
@@ -12,10 +15,26 @@ interface User {
   avatar?: string
 }
 
+interface TenantContactInfo {
+  siteName: string
+  siteDescription: string
+  contactEmail: string
+  contactPhone: string
+  addressCep?: string
+  addressStreet?: string
+  addressNumber?: string
+  addressComplement?: string
+  addressNeighborhood?: string
+  addressCity?: string
+  addressState?: string
+}
+
 export default function Profile() {
+  const [form] = Form.useForm()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [savingContact, setSavingContact] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -23,10 +42,17 @@ export default function Profile() {
     newPassword: '',
     confirmPassword: ''
   })
+  const [contactInfo, setContactInfo] = useState<TenantContactInfo>({
+    siteName: '',
+    siteDescription: '',
+    contactEmail: '',
+    contactPhone: ''
+  })
   const [avatar, setAvatar] = useState<string | null>(null)
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const { loading: cepLoading, searchCep } = useCep(form)
   const router = useRouter()
 
   useEffect(() => {
@@ -48,8 +74,111 @@ export default function Profile() {
       newPassword: '',
       confirmPassword: ''
     })
+    
+    loadContactInfo()
     setLoading(false)
   }, [router])
+
+  const parseAddressString = (addressStr: string) => {
+    if (!addressStr) return {}
+    
+    const parts = addressStr.split(',').map((p) => p.trim()).filter(Boolean)
+    const address: any = {}
+
+    const cepMatch = addressStr.match(/CEP:\s*(\d{5}-?\d{3})|\b(\d{5}-?\d{3})\b/i)
+    if (cepMatch) {
+      address.cep = cepMatch[1] || cepMatch[2]
+    }
+
+    const stateIndex = parts.findIndex((p) => /^[A-Z]{2}$/.test(p))
+    if (stateIndex >= 0) {
+      address.state = parts[stateIndex]
+      parts.splice(stateIndex, 1)
+    }
+
+    if (parts.length >= 1) {
+      const streetMatch = parts[0].match(/^(.+?)(?:\s*,?\s*(?:nº|n\.|N°|Nº|No)\s*(\d+))?/i)
+      if (streetMatch) {
+        address.street = streetMatch[1].trim()
+        if (streetMatch[2]) address.number = streetMatch[2]
+      } else {
+        address.street = parts[0]
+      }
+    }
+    if (parts.length >= 2 && !address.number) {
+      const numberMatch = parts[1].match(/(?:nº|n\.|N°|Nº|No)\s*(\d+)|^(\d+)$/i)
+      if (numberMatch) {
+        address.number = numberMatch[1] || numberMatch[2]
+      }
+    }
+    if (parts.length >= 3) address.neighborhood = parts[2]
+    if (parts.length >= 4) address.city = parts[3]
+
+    return address
+  }
+
+  const loadContactInfo = async () => {
+    try {
+      const settingsData = await apiService.getPersonalizationSettings() as any
+      if (settingsData) {
+        const addressStr = settingsData.contactAddress || ''
+        const parsedAddress = parseAddressString(addressStr)
+        
+        const contact = {
+          siteName: settingsData.siteName || '',
+          siteDescription: settingsData.siteDescription || '',
+          contactEmail: settingsData.contactEmail || '',
+          contactPhone: settingsData.contactPhone || '',
+          addressCep: parsedAddress.cep || '',
+          addressStreet: parsedAddress.street || '',
+          addressNumber: parsedAddress.number || '',
+          addressComplement: parsedAddress.complement || '',
+          addressNeighborhood: parsedAddress.neighborhood || '',
+          addressCity: parsedAddress.city || '',
+          addressState: parsedAddress.state || ''
+        }
+        
+        setContactInfo(contact)
+        form.setFieldsValue(contact)
+      }
+    } catch (error) {
+      console.error('Erro ao carregar informações de contato:', error)
+    }
+  }
+
+  const buildAddressString = (fields: TenantContactInfo): string => {
+    const parts = []
+    if (fields.addressStreet) parts.push(fields.addressStreet)
+    if (fields.addressNumber) parts.push(`Nº ${fields.addressNumber}`)
+    if (fields.addressComplement) parts.push(fields.addressComplement)
+    if (fields.addressNeighborhood) parts.push(fields.addressNeighborhood)
+    if (fields.addressCity) parts.push(fields.addressCity)
+    if (fields.addressState) parts.push(fields.addressState)
+    if (fields.addressCep) parts.push(`CEP: ${fields.addressCep}`)
+    return parts.join(', ')
+  }
+
+  const handleSaveContact = async () => {
+    try {
+      setSavingContact(true)
+      const addressFields = form.getFieldsValue()
+      const fullAddress = buildAddressString({ ...contactInfo, ...addressFields })
+      
+      const settingsToSave = {
+        ...contactInfo,
+        ...addressFields,
+        contactAddress: fullAddress
+      }
+      
+      await apiService.updateSettings(settingsToSave)
+      setContactInfo({ ...contactInfo, ...addressFields })
+      message.success('Informações de contato salvas com sucesso!')
+    } catch (error: any) {
+      message.error('Erro ao salvar informações de contato')
+    } finally {
+      setSavingContact(false)
+    }
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
@@ -366,6 +495,146 @@ export default function Profile() {
                 <label className="block text-sm font-medium text-gray-700">ID do Tenant</label>
                 <p className="mt-1 text-sm text-gray-900 font-mono">{user?.tenantId}</p>
               </div>
+            </div>
+          </div>
+
+          {/* Informações de Contato do Tenant */}
+          <div className="bg-white rounded-lg shadow-sm lg:col-span-2">
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+              <h2 className="text-lg font-medium text-gray-900">Informações de Contato</h2>
+              <button
+                type="button"
+                onClick={handleSaveContact}
+                disabled={savingContact}
+                className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 text-sm"
+              >
+                {savingContact ? 'Salvando...' : 'Salvar Contato'}
+              </button>
+            </div>
+            <div className="p-4">
+              <Form form={form} layout="vertical">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nome do Estabelecimento</label>
+                    <input
+                      type="text"
+                      value={contactInfo.siteName}
+                      onChange={(e) => setContactInfo({...contactInfo, siteName: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                      placeholder="Nome do seu petshop"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Email de Contato</label>
+                    <input
+                      type="email"
+                      value={contactInfo.contactEmail}
+                      onChange={(e) => setContactInfo({...contactInfo, contactEmail: e.target.value})}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                      placeholder="contato@petshop.com"
+                    />
+                  </div>
+                </div>
+                
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Descrição</label>
+                  <textarea
+                    value={contactInfo.siteDescription}
+                    onChange={(e) => setContactInfo({...contactInfo, siteDescription: e.target.value})}
+                    rows={2}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                    placeholder="Descrição do seu petshop"
+                  />
+                </div>
+
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Telefone de Contato</label>
+                  <input
+                    type="text"
+                    value={contactInfo.contactPhone}
+                    onChange={(e) => {
+                      const raw = e.target.value.replace(/\D/g, '')
+                      const formatted = formatPhone(raw.slice(0, 11))
+                      setContactInfo({...contactInfo, contactPhone: formatted})
+                    }}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                    placeholder="(11) 99999-9999"
+                    maxLength={15}
+                  />
+                </div>
+
+                <div className="border-t border-gray-200 pt-4">
+                  <h3 className="text-sm font-medium text-gray-900 mb-3">Endereço</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="md:col-span-2">
+                      <Form.Item name="addressCep" label="CEP">
+                        <input
+                          placeholder="00000-000"
+                          maxLength={9}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/\D/g, '')
+                            const formatted = formatCEP(value)
+                            form.setFieldsValue({ addressCep: formatted })
+                            if (value.length === 8) {
+                              searchCep(value)
+                            }
+                          }}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                        />
+                      </Form.Item>
+                    </div>
+                    <div className="md:col-span-2">
+                      <Form.Item name="addressStreet" label="Logradouro">
+                        <input
+                          placeholder="Rua, Avenida, etc."
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                        />
+                      </Form.Item>
+                    </div>
+                    <div>
+                      <Form.Item name="addressNumber" label="Número">
+                        <input
+                          placeholder="Número"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                        />
+                      </Form.Item>
+                    </div>
+                    <div>
+                      <Form.Item name="addressNeighborhood" label="Bairro">
+                        <input
+                          placeholder="Bairro"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                        />
+                      </Form.Item>
+                    </div>
+                    <div>
+                      <Form.Item name="addressComplement" label="Complemento">
+                        <input
+                          placeholder="Apto/Bloco (opcional)"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                        />
+                      </Form.Item>
+                    </div>
+                    <div>
+                      <Form.Item name="addressCity" label="Cidade">
+                        <input
+                          placeholder="Cidade"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                        />
+                      </Form.Item>
+                    </div>
+                    <div>
+                      <Form.Item name="addressState" label="Estado (UF)">
+                        <input
+                          placeholder="SP"
+                          maxLength={2}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm"
+                        />
+                      </Form.Item>
+                    </div>
+                  </div>
+                </div>
+              </Form>
             </div>
           </div>
         </div>

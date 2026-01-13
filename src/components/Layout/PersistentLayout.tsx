@@ -135,6 +135,7 @@ export default function PersistentLayout({ children }: LayoutProps) {
     // ADMIN
     { key: '/admin-dashboard', icon: <DashboardOutlined />, label: 'Admin Dashboard', category: 'admin' },
     { key: '/admin-billing', icon: <DollarOutlined />, label: 'Gestão de Billing', category: 'admin' },
+    { key: '/pricing-management', icon: <DollarOutlined />, label: 'Gerenciamento de Preços', category: 'admin' },
     { key: '/unified-access-management', icon: <ControlOutlined />, label: 'Gestão de Acesso', category: 'admin' },
     { key: '/personalization', icon: <BgColorsOutlined />, label: 'Personalização', category: 'admin' },
     { key: '/audit-logs', icon: <BarChartOutlined />, label: 'Auditoria', category: 'admin' },
@@ -298,6 +299,9 @@ export default function PersistentLayout({ children }: LayoutProps) {
   
   const menuItems = buildGroupedMenu()
 
+  // Verificar se é admin
+  const isAdmin = user?.role === 'ADMIN' || user?.planRole === 'ADMIN'
+  
   const userMenuItems = [
     {
       key: 'profile',
@@ -306,10 +310,10 @@ export default function PersistentLayout({ children }: LayoutProps) {
       onClick: () => router.push('/profile')
     },
     {
-      key: 'settings',
+      key: 'preferences',
       icon: <SettingOutlined />,
-      label: 'Configurações',
-      onClick: () => router.push('/settings')
+      label: 'Preferências',
+      onClick: () => router.push('/user-preferences')
     },
     {
       type: 'divider' as const
@@ -368,6 +372,7 @@ export default function PersistentLayout({ children }: LayoutProps) {
           left: 0,
           top: 0,
           bottom: 0,
+          padding: 0
         }}
         width={256}
       >
@@ -375,10 +380,9 @@ export default function PersistentLayout({ children }: LayoutProps) {
         <div style={{ 
           width: '100%',
           height: collapsed ? 60 : (personalizationSettings.bannerHeight || 80),
-          margin: collapsed ? '8px 0' : '16px 0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
+          margin: 0,
+          padding: 0,
+          display: 'block',
           background: 'transparent',
           position: 'relative'
         }}>
@@ -415,22 +419,23 @@ export default function PersistentLayout({ children }: LayoutProps) {
               }}
             />
           ) : (
-            <div style={{
-              width: '100%',
-              height: '100%',
-              background: 'rgba(255,255,255,0.1)',
-              borderRadius: collapsed ? 4 : (personalizationSettings.borderRadius || 8),
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: collapsed ? 12 : 16,
-              fontWeight: 'bold',
-              color: 'white',
-              textAlign: 'center',
-              padding: '8px'
-            }}>
-              {collapsed ? personalizationSettings.siteName?.substring(0, 2).toUpperCase() || 'PS' : personalizationSettings.siteName || 'PETSHOP'}
-            </div>
+            <Image 
+              src="/logo.png" 
+              alt="PetFlow Logo"
+              width={256}
+              height={collapsed ? 60 : (personalizationSettings.bannerHeight || 80)}
+              unoptimized
+              style={{ 
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                borderRadius: 0,
+                display: 'block'
+              }} 
+              onError={() => {
+                // Fallback para texto se a logo não carregar
+              }}
+            />
           )}
         </div>
 

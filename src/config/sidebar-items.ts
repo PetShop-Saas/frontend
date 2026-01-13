@@ -242,6 +242,16 @@ export const SIDEBAR_ITEMS: SidebarItem[] = [
     description: 'Gestão de pagamentos dos clientes'
   },
   {
+    key: 'pricing-management',
+    label: 'Gerenciamento de Preços',
+    icon: 'DollarOutlined',
+    path: '/pricing-management',
+    module: 'admin',
+    category: 'admin',
+    adminOnly: true,
+    description: 'Gerenciar preços e promoções dos planos'
+  },
+  {
     key: 'user-role-management',
     label: 'Usuários e Permissões',
     icon: 'TeamOutlined',

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
+import { apiService } from '../services/api'
 import { 
   UserOutlined, 
   HeartOutlined,
@@ -20,6 +21,30 @@ import {
 
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [planPricings, setPlanPricings] = useState<any[]>([])
+  const [loadingPrices, setLoadingPrices] = useState(true)
+
+  useEffect(() => {
+    // Buscar preços dos planos da API
+    const loadPlanPricings = async () => {
+      try {
+        const prices = await apiService.getPublicPlanPricings()
+        setPlanPricings(prices)
+      } catch (error) {
+        console.error('Erro ao carregar preços dos planos:', error)
+        // Usar preços padrão em caso de erro (sincronizados com o seed)
+        setPlanPricings([
+          { plan: 'BASIC', price: 59.9 },
+          { plan: 'PRO', price: 129.9 },
+          { plan: 'ENTERPRISE', price: 229.9 }
+        ])
+      } finally {
+        setLoadingPrices(false)
+      }
+    }
+
+    loadPlanPricings()
+  }, [])
 
   useEffect(() => {
     // Aplicar classe no body para permitir scroll
@@ -313,61 +338,75 @@ export default function Home() {
           </div>
 
           <div className="mt-20 grid grid-cols-1 gap-8 lg:grid-cols-3">
-            {/* Plano Starter */}
-            <div className="bg-white p-8 rounded-2xl border border-gray-200 hover:border-green-200 transition-colors duration-300">
-              <div className="text-center">
-                <h3 className="text-2xl font-bold text-gray-900">Starter</h3>
-                <p className="mt-2 text-gray-600">Perfeito para começar</p>
-                <div className="mt-6">
-                  <span className="text-5xl font-bold text-gray-900">R$ 97</span>
-                  <span className="text-gray-600">/mês</span>
+            {/* Plano Starter (BASIC) */}
+            {(() => {
+              const basicPrice = planPricings.find(p => p.plan === 'BASIC')
+              const basicPriceFormatted = basicPrice 
+                ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(basicPrice.price)
+                : 'R$ 59,90'
+              return (
+                <div className="bg-white p-8 rounded-2xl border border-gray-200 hover:border-green-200 transition-colors duration-300">
+                  <div className="text-center">
+                    <h3 className="text-2xl font-bold text-gray-900">Starter</h3>
+                    <p className="mt-2 text-gray-600">Perfeito para começar</p>
+                    <div className="mt-6">
+                      <span className="text-5xl font-bold text-gray-900">{loadingPrices ? '...' : basicPriceFormatted}</span>
+                      <span className="text-gray-600">/mês</span>
+                    </div>
+                    <ul className="mt-8 space-y-4">
+                      <li className="flex items-center">
+                        <CheckCircleOutlined className="text-green-500 text-xl mr-3" />
+                        <span>Até 100 clientes</span>
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircleOutlined className="text-green-500 text-xl mr-3" />
+                        <span>Até 200 pets</span>
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircleOutlined className="text-green-500 text-xl mr-3" />
+                        <span>Agendamentos ilimitados</span>
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircleOutlined className="text-green-500 text-xl mr-3" />
+                        <span>Relatórios básicos</span>
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircleOutlined className="text-green-500 text-xl mr-3" />
+                        <span>Suporte por email</span>
+                      </li>
+                    </ul>
+                    <Link
+                      href="/complete-registration"
+                      className="mt-8 w-full bg-gray-900 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors duration-200 block text-center"
+                    >
+                      Começar Agora
+                    </Link>
+                  </div>
                 </div>
-                <ul className="mt-8 space-y-4">
-                  <li className="flex items-center">
-                    <CheckCircleOutlined className="text-green-500 text-xl mr-3" />
-                    <span>Até 100 clientes</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircleOutlined className="text-green-500 text-xl mr-3" />
-                    <span>Até 200 pets</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircleOutlined className="text-green-500 text-xl mr-3" />
-                    <span>Agendamentos ilimitados</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircleOutlined className="text-green-500 text-xl mr-3" />
-                    <span>Relatórios básicos</span>
-                  </li>
-                  <li className="flex items-center">
-                    <CheckCircleOutlined className="text-green-500 text-xl mr-3" />
-                    <span>Suporte por email</span>
-                  </li>
-                </ul>
-                <Link
-                  href="/complete-registration"
-                  className="mt-8 w-full bg-gray-900 text-white py-3 px-6 rounded-lg font-semibold hover:bg-gray-800 transition-colors duration-200 block text-center"
-                >
-                  Começar Agora
-                </Link>
-              </div>
-            </div>
+              )
+            })()}
 
-            {/* Plano Professional - Destaque */}
-            <div className="bg-gradient-to-br from-green-600 to-emerald-600 p-8 rounded-2xl shadow-2xl transform scale-105 relative">
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <span className="bg-yellow-400 text-green-800 px-4 py-2 rounded-full text-sm font-bold">
-                  Mais Popular
-                </span>
-              </div>
-              <div className="text-center text-white">
-                <h3 className="text-2xl font-bold">Professional</h3>
-                <p className="mt-2 text-green-100">Para petshops em crescimento</p>
-                <div className="mt-6">
-                  <span className="text-5xl font-bold">R$ 197</span>
-                  <span className="text-green-100">/mês</span>
-                </div>
-                <ul className="mt-8 space-y-4">
+            {/* Plano Professional (PRO) - Destaque */}
+            {(() => {
+              const proPrice = planPricings.find(p => p.plan === 'PRO')
+              const proPriceFormatted = proPrice 
+                ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(proPrice.price)
+                : 'R$ 129,90'
+              return (
+                <div className="bg-gradient-to-br from-green-600 to-emerald-600 p-8 rounded-2xl shadow-2xl transform scale-105 relative">
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
+                    <span className="bg-yellow-400 text-green-800 px-4 py-2 rounded-full text-sm font-bold">
+                      Mais Popular
+                    </span>
+                  </div>
+                  <div className="text-center text-white">
+                    <h3 className="text-2xl font-bold">Professional</h3>
+                    <p className="mt-2 text-green-100">Para petshops em crescimento</p>
+                    <div className="mt-6">
+                      <span className="text-5xl font-bold">{loadingPrices ? '...' : proPriceFormatted}</span>
+                      <span className="text-green-100">/mês</span>
+                    </div>
+                    <ul className="mt-8 space-y-4">
                   <li className="flex items-center">
                     <CheckCircleOutlined className="text-yellow-300 text-xl mr-3" />
                     <span>Até 500 clientes</span>
@@ -392,26 +431,34 @@ export default function Home() {
                     <CheckCircleOutlined className="text-yellow-300 text-xl mr-3" />
                     <span>Suporte prioritário</span>
                   </li>
-                </ul>
-                <Link
-                  href="/complete-registration"
-                  className="mt-8 w-full bg-yellow-400 text-green-800 py-3 px-6 rounded-lg font-semibold hover:bg-yellow-300 transition-colors duration-200 block text-center"
-                >
-                  Começar Agora
-                </Link>
-              </div>
-            </div>
+                    </ul>
+                    <Link
+                      href="/complete-registration"
+                      className="mt-8 w-full bg-yellow-400 text-green-800 py-3 px-6 rounded-lg font-semibold hover:bg-yellow-300 transition-colors duration-200 block text-center"
+                    >
+                      Começar Agora
+                    </Link>
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* Plano Enterprise */}
-            <div className="bg-white p-8 rounded-2xl border border-gray-200 hover:border-green-200 transition-colors duration-300">
-              <div className="text-center">
-                <h3 className="text-2xl font-bold text-gray-900">Enterprise</h3>
-                <p className="mt-2 text-gray-600">Para grandes operações</p>
-                <div className="mt-6">
-                  <span className="text-5xl font-bold text-gray-900">R$ 397</span>
-                  <span className="text-gray-600">/mês</span>
-                </div>
-                <ul className="mt-8 space-y-4">
+            {(() => {
+              const enterprisePrice = planPricings.find(p => p.plan === 'ENTERPRISE')
+              const enterprisePriceFormatted = enterprisePrice 
+                ? new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(enterprisePrice.price)
+                : 'R$ 229,90'
+              return (
+                <div className="bg-white p-8 rounded-2xl border border-gray-200 hover:border-green-200 transition-colors duration-300">
+                  <div className="text-center">
+                    <h3 className="text-2xl font-bold text-gray-900">Enterprise</h3>
+                    <p className="mt-2 text-gray-600">Para grandes operações</p>
+                    <div className="mt-6">
+                      <span className="text-5xl font-bold text-gray-900">{loadingPrices ? '...' : enterprisePriceFormatted}</span>
+                      <span className="text-gray-600">/mês</span>
+                    </div>
+                    <ul className="mt-8 space-y-4">
                   <li className="flex items-center">
                     <CheckCircleOutlined className="text-green-500 text-xl mr-3" />
                     <span>Clientes ilimitados</span>
@@ -443,8 +490,10 @@ export default function Home() {
                 >
                   Começar Agora
                 </Link>
-              </div>
-            </div>
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         </div>
       </div>

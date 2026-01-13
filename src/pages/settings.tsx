@@ -21,190 +21,86 @@ import {
   ReloadOutlined,
   InfoCircleOutlined 
 } from '@ant-design/icons'
-import { useCep } from '../hooks/useCep'
-import { formatPhone, formatCEP } from '../utils/formatting'
-import { Form } from 'antd'
 
 const { Title, Text } = Typography
 
-interface AddressFields {
-  cep?: string
-  street?: string
-  number?: string
-  complement?: string
-  neighborhood?: string
-  city?: string
-  state?: string
-}
 
 interface SettingsData {
-  siteName: string
-  siteDescription: string
-  contactEmail: string
-  contactPhone: string
-  contactAddress: string
-  // Campos de endereço separados
-  addressCep?: string
-  addressStreet?: string
-  addressNumber?: string
-  addressComplement?: string
-  addressNeighborhood?: string
-  addressCity?: string
-  addressState?: string
   enableNotifications: boolean
   enableEmailMarketing: boolean
   maintenanceMode: boolean
+  disabledSidebarItems: string[] // Array de paths das abas desabilitadas
 }
 
-// Função para parsear endereço completo em campos separados
-const parseAddressString = (addressStr: string): AddressFields => {
-  if (!addressStr) return {}
-  
-  const parts = addressStr.split(',').map((p) => p.trim()).filter(Boolean)
-  const address: AddressFields = {}
-
-  // Buscar CEP
-  const cepMatch = addressStr.match(/CEP:\s*(\d{5}-?\d{3})|\b(\d{5}-?\d{3})\b/i)
-  if (cepMatch) {
-    address.cep = cepMatch[1] || cepMatch[2]
-  }
-
-  // Buscar estado (2 letras maiúsculas)
-  const stateIndex = parts.findIndex((p) => /^[A-Z]{2}$/.test(p))
-  if (stateIndex >= 0) {
-    address.state = parts[stateIndex]
-    parts.splice(stateIndex, 1)
-  }
-
-  // Estrutura esperada: [0]=rua, [1]=número, [2]=bairro, [3]=cidade
-  if (parts.length >= 1) {
-    const streetMatch = parts[0].match(/^(.+?)(?:\s*,?\s*(?:nº|n\.|N°|Nº|No)\s*(\d+))?/i)
-    if (streetMatch) {
-      address.street = streetMatch[1].trim()
-      if (streetMatch[2]) address.number = streetMatch[2]
-    } else {
-      address.street = parts[0]
-    }
-  }
-  if (parts.length >= 2 && !address.number) {
-    const numberMatch = parts[1].match(/(?:nº|n\.|N°|Nº|No)\s*(\d+)|^(\d+)$/i)
-    if (numberMatch) {
-      address.number = numberMatch[1] || numberMatch[2]
-    }
-  }
-  if (parts.length >= 3) address.neighborhood = parts[2]
-  if (parts.length >= 4) address.city = parts[3]
-
-  return address
-}
-
-// Função para montar endereço completo a partir dos campos
-const buildAddressString = (fields: Partial<SettingsData>): string => {
-  const parts = []
-  if (fields.addressStreet) parts.push(fields.addressStreet)
-  if (fields.addressNumber) parts.push(`Nº ${fields.addressNumber}`)
-  if (fields.addressComplement) parts.push(fields.addressComplement)
-  if (fields.addressNeighborhood) parts.push(fields.addressNeighborhood)
-  if (fields.addressCity) parts.push(fields.addressCity)
-  if (fields.addressState) parts.push(fields.addressState)
-  if (fields.addressCep) parts.push(`CEP: ${fields.addressCep}`)
-  return parts.join(', ')
-}
 
 export default function Settings() {
   const router = useRouter()
-  const [form] = Form.useForm()
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const { loading: cepLoading, searchCep } = useCep(form)
+  const [isAuthorized, setIsAuthorized] = useState(false)
   const [settings, setSettings] = useState<SettingsData>({
-    siteName: 'PetFlow',
-    siteDescription: 'Sistema de gestão para petshops',
-    contactEmail: '',
-    contactPhone: '',
-    contactAddress: '',
     enableNotifications: true,
     enableEmailMarketing: false,
-    maintenanceMode: false
+    maintenanceMode: false,
+    disabledSidebarItems: []
   })
 
   useEffect(() => {
-    // Verificar se o usuário está logado
-    const token = localStorage.getItem('token')
-    const user = localStorage.getItem('user')
-    
-    if (!token || !user) {
-      message.error('Você precisa estar logado para acessar as configurações')
-      router.push('/login')
-      return
-    }
-
-    // Verificar se o usuário tem acesso (MANAGER ou role que permite configurações)
-    try {
-      const userData = JSON.parse(user)
-      // Permitir acesso para MANAGER ou usuários com permissão de configurações
-      // O sistema deve usar permissões mais granulares, mas por enquanto permitimos MANAGER
-      if (userData.role !== 'MANAGER' && userData.planRole !== 'ADMIN') {
-        message.error('Apenas gerentes podem acessar as configurações')
-        router.push('/')
+    const checkAccess = async () => {
+      // Verificar se o usuário está logado
+      const token = localStorage.getItem('token')
+      const user = localStorage.getItem('user')
+      
+      if (!token || !user) {
+        message.error('Você precisa estar logado para acessar as configurações')
+        router.push('/login')
         return
       }
-    } catch (error) {
-      message.error('Erro ao verificar permissões')
-      router.push('/login')
-      return
+
+      // Verificar se o usuário é ADMIN (apenas admin pode acessar configurações do sistema)
+      try {
+        const userData = JSON.parse(user)
+        const isAdmin = userData.role === 'ADMIN' || userData.planRole === 'ADMIN'
+        
+        if (!isAdmin) {
+          message.error('Acesso negado. Apenas administradores podem acessar as configurações do sistema.')
+          router.push('/')
+          return
+        }
+
+        // Se chegou aqui, é admin - autorizar acesso
+        setIsAuthorized(true)
+        await loadSettings()
+      } catch (error) {
+        message.error('Erro ao verificar permissões')
+        router.push('/login')
+        return
+      } finally {
+        setLoading(false)
+      }
     }
 
-    loadSettings()
+    checkAccess()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router])
 
   const loadSettings = async () => {
     try {
-      setLoading(true)
-      
-      // Carregar configurações do backend (agora inclui dados do tenant)
+      // Carregar apenas configurações do sistema
       const settingsData = await apiService.getPersonalizationSettings()
       
       if (settingsData) {
-        const addressStr = (settingsData as any).contactAddress || ''
-        const parsedAddress = parseAddressString(addressStr)
-        
         const newSettings = {
-          siteName: (settingsData as any).siteName || 'PetShop',
-          siteDescription: (settingsData as any).siteDescription || 'Sistema de gestão para petshops',
-          contactEmail: (settingsData as any).contactEmail || '',
-          contactPhone: (settingsData as any).contactPhone || '',
-          contactAddress: addressStr,
-          addressCep: parsedAddress.cep || '',
-          addressStreet: parsedAddress.street || '',
-          addressNumber: parsedAddress.number || '',
-          addressComplement: parsedAddress.complement || '',
-          addressNeighborhood: parsedAddress.neighborhood || '',
-          addressCity: parsedAddress.city || '',
-          addressState: parsedAddress.state || '',
           enableNotifications: (settingsData as any).enableNotifications !== false,
           enableEmailMarketing: (settingsData as any).enableEmailMarketing === true,
-          maintenanceMode: (settingsData as any).maintenanceMode === true
+          maintenanceMode: (settingsData as any).maintenanceMode === true,
+          disabledSidebarItems: (settingsData as any).disabledSidebarItems || []
         }
         
         setSettings(newSettings)
-        
-        // Preencher formulário de endereço
-        form.setFieldsValue({
-          addressCep: newSettings.addressCep,
-          addressStreet: newSettings.addressStreet,
-          addressNumber: newSettings.addressNumber,
-          addressComplement: newSettings.addressComplement,
-          addressNeighborhood: newSettings.addressNeighborhood,
-          addressCity: newSettings.addressCity,
-          addressState: newSettings.addressState,
-        })
       }
     } catch (error) {
       message.error('Erro ao carregar configurações')
-    } finally {
-      setLoading(false)
     }
   }
 
@@ -212,29 +108,10 @@ export default function Settings() {
     try {
       setSaving(true)
       
-      // Obter valores do formulário de endereço
-      const addressFields = form.getFieldsValue()
+      // Salvar apenas configurações do sistema
+      await apiService.updateSettings(settings)
       
-      // Montar endereço completo a partir dos campos separados
-      const fullAddress = buildAddressString({
-        ...settings,
-        ...addressFields
-      })
-      
-      // Atualizar settings com endereço completo e campos separados
-      const settingsToSave = {
-        ...settings,
-        ...addressFields,
-        contactAddress: fullAddress
-      }
-      
-      // Salvar configurações no backend (agora atualiza tenant automaticamente)
-      await apiService.updateSettings(settingsToSave)
-      
-      // Atualizar estado local
-      setSettings(settingsToSave)
-      
-      message.success('Configurações salvas com sucesso!')
+      message.success('Configurações do sistema salvas com sucesso!')
     } catch (error) {
       message.error('Erro ao salvar configurações')
     } finally {
@@ -244,19 +121,52 @@ export default function Settings() {
 
   const handleReset = () => {
     setSettings({
-      siteName: 'PetFlow',
-      siteDescription: 'Sistema de gestão para petshops',
-      contactEmail: '',
-      contactPhone: '',
-      contactAddress: '',
       enableNotifications: true,
       enableEmailMarketing: false,
-      maintenanceMode: false
+      maintenanceMode: false,
+      disabledSidebarItems: []
     })
     message.info('Configurações resetadas para os valores padrão')
   }
 
-  if (loading) {
+  // Lista de todas as abas disponíveis no sistema
+  const availableSidebarItems = [
+    { path: '/customers', label: 'Clientes' },
+    { path: '/pets', label: 'Pets' },
+    { path: '/appointments', label: 'Agendamentos' },
+    { path: '/calendar', label: 'Calendário' },
+    { path: '/services', label: 'Serviços' },
+    { path: '/products', label: 'Produtos' },
+    { path: '/sales', label: 'Vendas' },
+    { path: '/suppliers', label: 'Fornecedores' },
+    { path: '/purchases', label: 'Compras' },
+    { path: '/medical-records', label: 'Histórico Médico' },
+    { path: '/financial-reports', label: 'Relatórios Financeiros' },
+    { path: '/communications', label: 'Comunicação' },
+    { path: '/notifications', label: 'Notificações' },
+    { path: '/tickets', label: 'Suporte' },
+    { path: '/hotel', label: 'Hotel' },
+    { path: '/cash-flow', label: 'Fluxo de Caixa' },
+    { path: '/operations', label: 'Operações' }
+  ]
+
+  const toggleSidebarItem = (path: string) => {
+    const isDisabled = settings.disabledSidebarItems.includes(path)
+    if (isDisabled) {
+      setSettings({
+        ...settings,
+        disabledSidebarItems: settings.disabledSidebarItems.filter(item => item !== path)
+      })
+    } else {
+      setSettings({
+        ...settings,
+        disabledSidebarItems: [...settings.disabledSidebarItems, path]
+      })
+    }
+  }
+
+  // Não renderizar nada até verificar permissões
+  if (loading || !isAuthorized) {
     return (
       <div>
         <div className="p-6">
@@ -273,7 +183,7 @@ export default function Settings() {
       <div className="p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 mb-2">Configurações do Sistema</h1>
-          <p className="text-gray-600">Gerencie as configurações gerais do sistema</p>
+          <p className="text-gray-600">Gerencie as configurações globais do sistema (apenas administradores)</p>
         </div>
 
         <Card>
@@ -340,122 +250,6 @@ export default function Settings() {
           />
 
           <Row gutter={[24, 24]}>
-            <Col span={12}>
-              <Card size="small" title="Informações Básicas">
-                <Space direction="vertical" className="w-full">
-                  <div>
-                    <Text strong>Nome do Site</Text>
-                    <Input
-                      value={settings.siteName}
-                      onChange={(e) => setSettings({...settings, siteName: e.target.value})}
-                      placeholder="Nome do seu petshop"
-                      className="mt-1"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Text strong>Descrição</Text>
-                    <Input.TextArea
-                      value={settings.siteDescription}
-                      onChange={(e) => setSettings({...settings, siteDescription: e.target.value})}
-                      placeholder="Descrição do seu petshop"
-                      rows={3}
-                      className="mt-1"
-                    />
-                  </div>
-                </Space>
-              </Card>
-            </Col>
-
-            <Col span={12}>
-              <Card size="small" title="Informações de Contato">
-                <Space direction="vertical" className="w-full">
-                  <div>
-                    <Text strong>Email de Contato</Text>
-                    <Input
-                      value={settings.contactEmail}
-                      onChange={(e) => setSettings({...settings, contactEmail: e.target.value})}
-                      placeholder="contato@petshop.com"
-                      className="mt-1"
-                    />
-                  </div>
-                  
-                  <div>
-                    <Text strong>Telefone de Contato</Text>
-                    <Input
-                      value={settings.contactPhone}
-                      onChange={(e) => {
-                        const raw = e.target.value.replace(/\D/g, '')
-                        const formatted = formatPhone(raw.slice(0, 11))
-                        setSettings({...settings, contactPhone: formatted})
-                      }}
-                      placeholder="(11) 99999-9999"
-                      className="mt-1"
-                      maxLength={15}
-                    />
-                  </div>
-                  
-                  <Form form={form} layout="vertical">
-                    <Row gutter={8}>
-                      <Col span={8}>
-                        <Form.Item name="addressCep" label="CEP">
-                          <Input
-                            placeholder="00000-000"
-                            maxLength={9}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(/\D/g, '')
-                              const formatted = formatCEP(value)
-                              form.setFieldsValue({ addressCep: formatted })
-                              if (value.length === 8) {
-                                searchCep(value)
-                              }
-                            }}
-                            suffix={cepLoading ? <Spin size="small" /> : null}
-                          />
-                        </Form.Item>
-                      </Col>
-                      <Col span={16}>
-                        <Form.Item name="addressStreet" label="Logradouro">
-                          <Input placeholder="Rua, Avenida, etc." />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-                    
-                    <Row gutter={8}>
-                      <Col span={8}>
-                        <Form.Item name="addressNumber" label="Número">
-                          <Input placeholder="Número" />
-                        </Form.Item>
-                      </Col>
-                      <Col span={8}>
-                        <Form.Item name="addressNeighborhood" label="Bairro">
-                          <Input placeholder="Bairro" />
-                        </Form.Item>
-                      </Col>
-                      <Col span={8}>
-                        <Form.Item name="addressComplement" label="Complemento">
-                          <Input placeholder="Apto/Bloco (opcional)" />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-                    
-                    <Row gutter={8}>
-                      <Col span={12}>
-                        <Form.Item name="addressCity" label="Cidade">
-                          <Input placeholder="Cidade" />
-                        </Form.Item>
-                      </Col>
-                      <Col span={12}>
-                        <Form.Item name="addressState" label="Estado (UF)">
-                          <Input placeholder="SP" maxLength={2} />
-                        </Form.Item>
-                      </Col>
-                    </Row>
-                  </Form>
-                </Space>
-              </Card>
-            </Col>
-
             <Col span={24}>
               <Card size="small" title="Configurações do Sistema">
                 <Space direction="vertical" className="w-full">
@@ -502,6 +296,60 @@ export default function Settings() {
                     />
                   </div>
                 </Space>
+              </Card>
+            </Col>
+
+            <Col span={24}>
+              <Card size="small" title="Gerenciar Abas da Sidebar">
+                <Alert
+                  message="Atenção"
+                  description="Desabilite temporariamente abas que não devem aparecer na sidebar. Isso afeta todos os usuários do sistema."
+                  type="warning"
+                  icon={<InfoCircleOutlined />}
+                  className="mb-4"
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {availableSidebarItems.map((item) => {
+                    const isDisabled = settings.disabledSidebarItems.includes(item.path)
+                    return (
+                      <div
+                        key={item.path}
+                        className={`p-3 border rounded-lg cursor-pointer transition-all ${
+                          isDisabled
+                            ? 'border-red-300 bg-red-50'
+                            : 'border-gray-200 bg-white hover:border-green-300 hover:bg-green-50'
+                        }`}
+                        onClick={() => toggleSidebarItem(item.path)}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Text strong={!isDisabled} className={isDisabled ? 'text-gray-400' : ''}>
+                              {item.label}
+                            </Text>
+                            <div className="text-xs text-gray-500 mt-1">
+                              {item.path}
+                            </div>
+                          </div>
+                          <Switch
+                            checked={!isDisabled}
+                            onChange={() => toggleSidebarItem(item.path)}
+                            size="small"
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+                {settings.disabledSidebarItems.length > 0 && (
+                  <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <Text strong className="text-yellow-800">
+                      {settings.disabledSidebarItems.length} aba(s) desabilitada(s)
+                    </Text>
+                    <div className="text-sm text-yellow-700 mt-1">
+                      As abas desabilitadas não aparecerão na sidebar para nenhum usuário.
+                    </div>
+                  </div>
+                )}
               </Card>
             </Col>
           </Row>

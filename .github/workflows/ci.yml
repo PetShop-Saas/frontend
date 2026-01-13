@@ -161,7 +161,6 @@ jobs:
     name: CI Pipeline
     runs-on: ubuntu-latest
     needs: [lint, type-check, test, build]
-    if: github.event_name == 'pull_request'
 
     steps:
       - name: CI Pipeline Success

@@ -7,18 +7,30 @@ import { apiService } from '../../services/api'
 jest.mock('../../services/api')
 
 describe('PlanBadge', () => {
+  const mockGetItem = jest.fn()
+
   beforeEach(() => {
     // Mock localStorage
-    Storage.prototype.getItem = jest.fn((key) => {
+    mockGetItem.mockImplementation((key) => {
       if (key === 'user') {
         return JSON.stringify({ tenantId: 'test-tenant-123' })
       }
       return null
     })
+    Object.defineProperty(window, 'localStorage', {
+      value: {
+        getItem: mockGetItem,
+        setItem: jest.fn(),
+        removeItem: jest.fn(),
+        clear: jest.fn(),
+      },
+      writable: true,
+    })
   })
 
   afterEach(() => {
     jest.clearAllMocks()
+    mockGetItem.mockClear()
   })
 
   it('should render ADMIN badge correctly', async () => {

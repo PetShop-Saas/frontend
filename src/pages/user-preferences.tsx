@@ -59,34 +59,39 @@ export default function UserPreferences() {
       setLoading(true)
       
       // Carregar preferências do usuário do backend
-      // Por enquanto, vamos usar as configurações do tenant como base
-      const settingsData = await apiService.getPersonalizationSettings() as any
+      const userPreferences = await apiService.getUserPreferences() as any
       
-      if (settingsData) {
-        // Carregar preferências do usuário (se existir endpoint específico)
-        // Por enquanto, usar valores padrão ou do localStorage
-        const savedPreferences = localStorage.getItem('userPreferences')
-        if (savedPreferences) {
-          setPreferences(JSON.parse(savedPreferences))
-        } else {
-          // Valores padrão
-          setPreferences({
-            enableNotifications: true,
-            enableEmailNotifications: true,
-            enablePushNotifications: true,
-            emailMarketing: false
-          })
-        }
+      if (userPreferences) {
+        setPreferences({
+          enableNotifications: userPreferences.enableNotifications ?? true,
+          enableEmailNotifications: userPreferences.enableEmailNotifications ?? true,
+          enablePushNotifications: userPreferences.enablePushNotifications ?? true,
+          emailMarketing: userPreferences.emailMarketing ?? false
+        })
+      } else {
+        // Valores padrão
+        setPreferences({
+          enableNotifications: true,
+          enableEmailNotifications: true,
+          enablePushNotifications: true,
+          emailMarketing: false
+        })
       }
     } catch (error) {
       console.error('Erro ao carregar preferências:', error)
-      // Usar valores padrão em caso de erro
-      setPreferences({
-        enableNotifications: true,
-        enableEmailNotifications: true,
-        enablePushNotifications: true,
-        emailMarketing: false
-      })
+      // Tentar carregar do localStorage como fallback
+      const savedPreferences = localStorage.getItem('userPreferences')
+      if (savedPreferences) {
+        setPreferences(JSON.parse(savedPreferences))
+      } else {
+        // Valores padrão em caso de erro
+        setPreferences({
+          enableNotifications: true,
+          enableEmailNotifications: true,
+          enablePushNotifications: true,
+          emailMarketing: false
+        })
+      }
     } finally {
       setLoading(false)
     }
@@ -96,17 +101,16 @@ export default function UserPreferences() {
     try {
       setSaving(true)
       
-      // Salvar preferências do usuário
-      // Por enquanto, salvar no localStorage
-      // TODO: Criar endpoint no backend para salvar preferências do usuário
-      localStorage.setItem('userPreferences', JSON.stringify(preferences))
+      // Salvar preferências do usuário no backend
+      await apiService.updateUserPreferences(preferences)
       
-      // Se houver endpoint, fazer chamada API aqui
-      // await apiService.updateUserPreferences(preferences)
+      // Também salvar no localStorage como backup
+      localStorage.setItem('userPreferences', JSON.stringify(preferences))
       
       message.success('Preferências salvas com sucesso!')
     } catch (error) {
-      message.error('Erro ao salvar preferências')
+      console.error('Erro ao salvar preferências:', error)
+      message.error('Erro ao salvar preferências. Tente novamente.')
     } finally {
       setSaving(false)
     }

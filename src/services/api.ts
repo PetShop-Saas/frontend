@@ -1261,6 +1261,121 @@ class ApiService {
     })
   }
 
+  // User preferences endpoints
+  async getUserPreferences() {
+    return this.request('/users/me/preferences')
+  }
+
+  async updateUserPreferences(preferences: any) {
+    return this.request('/users/me/preferences', {
+      method: 'PUT',
+      body: JSON.stringify(preferences)
+    })
+  }
+
+  // Payment endpoints (AbacatePay)
+  async createBilling(amount: number, description: string, plan?: string, promotionId?: string) {
+    return this.request('/payments/create-billing', {
+      method: 'POST',
+      body: JSON.stringify({ amount, description, plan, promotionId })
+    })
+  }
+
+  // Criar cobrança pública (sem autenticação - para registro)
+  async createBillingPublic(amount: number, description: string, customerEmail: string, customerName: string, plan?: string, customerPhone?: string) {
+    const response = await fetch(`${API_BASE_URL}/payments/create-billing-public`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ amount, description, plan, customerEmail, customerName, customerPhone })
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Erro ao criar cobrança')
+    }
+
+    return response.json()
+  }
+
+  async checkBillingStatus(billingId: string) {
+    // Endpoint público, não precisa de autenticação
+    const response = await fetch(`${API_BASE_URL}/payments/billing/${billingId}/status`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Erro ao verificar status')
+    }
+
+    return response.json()
+  }
+
+  async createPixQRCode(amount: number, description?: string, customerEmail?: string, customerName?: string) {
+    // Se tiver customerEmail e customerName, usar endpoint público (para registro)
+    if (customerEmail && customerName) {
+      const response = await fetch(`${API_BASE_URL}/payments/pix/qrcode-public`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ amount, description, customerEmail, customerName })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.message || 'Erro ao criar QRCode PIX')
+      }
+
+      return response.json()
+    }
+
+    // Caso contrário, usar endpoint autenticado
+    return this.request('/payments/pix/qrcode', {
+      method: 'POST',
+      body: JSON.stringify({ amount, description })
+    })
+  }
+
+  async checkPixStatus(qrcodeId: string) {
+    // Endpoint público, não precisa de autenticação
+    const response = await fetch(`${API_BASE_URL}/payments/pix/${qrcodeId}/status`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Erro ao verificar status PIX')
+    }
+
+    return response.json()
+  }
+
+  // Simular pagamento PIX (apenas em modo dev/teste)
+  async simulatePixPayment(qrcodeId: string) {
+    const response = await fetch(`${API_BASE_URL}/payments/pix/${qrcodeId}/simulate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Erro ao simular pagamento')
+    }
+
+    return response.json()
+  }
+
   async uploadImage(file: File, category: string, metadata?: any) {
     const formData = new FormData()
     formData.append('file', file)

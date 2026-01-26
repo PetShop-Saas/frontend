@@ -13,16 +13,24 @@ import {
   Switch,
   Divider,
   Alert,
-  Spin
+  Spin,
+  Tabs,
+  Select,
+  Form
 } from 'antd'
 import { 
   SettingOutlined, 
   SaveOutlined, 
   ReloadOutlined,
-  InfoCircleOutlined 
+  InfoCircleOutlined,
+  MailOutlined,
+  ReloadOutlined as ResetOutlined
 } from '@ant-design/icons'
 
 const { Title, Text } = Typography
+const { TabPane } = Tabs
+const { Option } = Select
+const { TextArea } = Input
 
 
 interface SettingsData {
@@ -44,6 +52,13 @@ export default function Settings() {
     maintenanceMode: false,
     disabledSidebarItems: []
   })
+  const [activeTab, setActiveTab] = useState('general')
+  const [emailTemplates, setEmailTemplates] = useState<any[]>([])
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('')
+  const [templateData, setTemplateData] = useState<{ html: string; text: string; subject?: string } | null>(null)
+  const [loadingTemplates, setLoadingTemplates] = useState(false)
+  const [savingTemplate, setSavingTemplate] = useState(false)
+  const [templateForm] = Form.useForm()
 
   useEffect(() => {
     const checkAccess = async () => {
@@ -70,7 +85,7 @@ export default function Settings() {
 
         // Se chegou aqui, é admin - autorizar acesso
         setIsAuthorized(true)
-        await loadSettings()
+        await Promise.all([loadSettings(), loadEmailTemplates()])
       } catch (error) {
         message.error('Erro ao verificar permissões')
         router.push('/login')
@@ -127,6 +142,86 @@ export default function Settings() {
       disabledSidebarItems: []
     })
     message.info('Configurações resetadas para os valores padrão')
+  }
+
+  const loadEmailTemplates = async () => {
+    try {
+      setLoadingTemplates(true)
+      const response = await apiService.getEmailTemplatesList() as any
+      // A resposta agora é um array direto de strings
+      const templatesList = Array.isArray(response) ? response : (response?.templates || [])
+      setEmailTemplates(templatesList)
+      if (templatesList.length > 0) {
+        setSelectedTemplate(templatesList[0])
+        await loadTemplate(templatesList[0])
+      }
+    } catch (error) {
+      message.error('Erro ao carregar templates de email')
+    } finally {
+      setLoadingTemplates(false)
+    }
+  }
+
+  const loadTemplate = async (templateName: string) => {
+    try {
+      const template = await apiService.getEmailTemplate(templateName) as any
+      if (template) {
+        setTemplateData(template)
+        templateForm.setFieldsValue({
+          subject: template.subject || '',
+          html: template.html || '',
+          text: template.text || ''
+        })
+      } else {
+        setTemplateData(null)
+        templateForm.resetFields()
+      }
+    } catch (error) {
+      setTemplateData(null)
+      templateForm.resetFields()
+    }
+  }
+
+  const handleTemplateChange = async (templateName: string) => {
+    setSelectedTemplate(templateName)
+    await loadTemplate(templateName)
+  }
+
+  const handleSaveTemplate = async () => {
+    try {
+      setSavingTemplate(true)
+      const values = await templateForm.validateFields()
+      
+      await apiService.updateEmailTemplate(selectedTemplate, {
+        html: values.html,
+        text: values.text,
+        subject: values.subject
+      })
+      
+      message.success('Template salvo com sucesso!')
+      await loadTemplate(selectedTemplate)
+    } catch (error: any) {
+      if (error.errorFields) {
+        message.error('Por favor, preencha todos os campos obrigatórios')
+      } else {
+        message.error('Erro ao salvar template')
+      }
+    } finally {
+      setSavingTemplate(false)
+    }
+  }
+
+  const handleResetTemplate = async () => {
+    try {
+      setSavingTemplate(true)
+      await apiService.resetEmailTemplate(selectedTemplate)
+      message.success('Template restaurado para o padrão!')
+      await loadTemplate(selectedTemplate)
+    } catch (error) {
+      message.error('Erro ao restaurar template')
+    } finally {
+      setSavingTemplate(false)
+    }
   }
 
   // Lista de todas as abas disponíveis no sistema
@@ -187,11 +282,16 @@ export default function Settings() {
         </div>
 
         <Card>
-          <div className="mb-4 flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <SettingOutlined className="text-green-600 text-xl" />
-              <Title level={4} className="mb-0">Configurações Gerais</Title>
-            </div>
+          <Tabs activeKey={activeTab} onChange={setActiveTab}>
+            <TabPane 
+              tab={<span><SettingOutlined /> Configurações Gerais</span>} 
+              key="general"
+            >
+              <div className="mb-4 flex justify-between items-center">
+                <div className="flex items-center space-x-2">
+                  <SettingOutlined className="text-green-600 text-xl" />
+                  <Title level={4} className="mb-0">Configurações Gerais</Title>
+                </div>
             
             <Space>
               <Button
@@ -381,6 +481,115 @@ export default function Settings() {
               Salvar Configurações
             </Button>
           </div>
+            </TabPane>
+
+            <TabPane 
+              tab={<span><MailOutlined /> Templates de Email</span>} 
+              key="email-templates"
+            >
+              <div className="mb-4">
+                <Title level={4} className="mb-2">Personalização de Templates de Email</Title>
+                <Text className="text-gray-600">
+                  Personalize os templates de email enviados pelo sistema. Você pode editar o HTML, texto e assunto de cada template.
+                </Text>
+              </div>
+
+              <Card>
+                <div className="mb-4">
+                  <Text strong className="block mb-2">Selecione o Template:</Text>
+                  <Select
+                    value={selectedTemplate}
+                    onChange={handleTemplateChange}
+                    style={{ width: '100%' }}
+                    loading={loadingTemplates}
+                  >
+                    {emailTemplates.map((template) => (
+                      <Option key={template.name} value={template.name}>
+                        {template.description}
+                      </Option>
+                    ))}
+                  </Select>
+                </div>
+
+                {selectedTemplate && (
+                  <Form
+                    form={templateForm}
+                    layout="vertical"
+                    onFinish={handleSaveTemplate}
+                  >
+                    <Form.Item
+                      label="Assunto do Email"
+                      name="subject"
+                      rules={[{ required: true, message: 'Assunto é obrigatório' }]}
+                    >
+                      <Input placeholder="Ex: Bem-vindo ao PetFlow! 🐾" />
+                    </Form.Item>
+
+                    <Form.Item
+                      label="Conteúdo HTML"
+                      name="html"
+                      rules={[{ required: true, message: 'Conteúdo HTML é obrigatório' }]}
+                    >
+                      <TextArea
+                        rows={15}
+                        placeholder="Cole aqui o HTML do template..."
+                        style={{ fontFamily: 'monospace' }}
+                      />
+                    </Form.Item>
+
+                    <Form.Item
+                      label="Versão Texto (Plain Text)"
+                      name="text"
+                      rules={[{ required: true, message: 'Versão texto é obrigatória' }]}
+                    >
+                      <TextArea
+                        rows={8}
+                        placeholder="Versão em texto puro do email..."
+                      />
+                    </Form.Item>
+
+                    <Alert
+                      message="Variáveis Disponíveis"
+                      description={
+                        <div className="text-sm">
+                          <p>Você pode usar as seguintes variáveis nos templates:</p>
+                          <ul className="list-disc ml-4 mt-2">
+                            <li><code>{'${name}'}</code> - Nome do destinatário</li>
+                            <li><code>{'${tenantName}'}</code> - Nome do petshop/clínica</li>
+                            <li><code>{'${date}'}</code> - Data (para agendamentos)</li>
+                            <li><code>{'${time}'}</code> - Hora (para agendamentos)</li>
+                            <li><code>{'${petName}'}</code> - Nome do pet</li>
+                            <li><code>{'${serviceName}'}</code> - Nome do serviço</li>
+                          </ul>
+                        </div>
+                      }
+                      type="info"
+                      className="mb-4"
+                    />
+
+                    <div className="flex justify-end space-x-2">
+                      <Button
+                        icon={<ResetOutlined />}
+                        onClick={handleResetTemplate}
+                        loading={savingTemplate}
+                      >
+                        Restaurar Padrão
+                      </Button>
+                      <Button
+                        type="primary"
+                        icon={<SaveOutlined />}
+                        htmlType="submit"
+                        loading={savingTemplate}
+                        className="bg-green-600 hover:bg-green-700 border-green-600"
+                      >
+                        Salvar Template
+                      </Button>
+                    </div>
+                  </Form>
+                )}
+              </Card>
+            </TabPane>
+          </Tabs>
         </Card>
       </div>
     </div>

@@ -106,10 +106,10 @@ export default function Sales() {
         apiService.getCustomers()
       ])
       
-      // Verificar se é um array direto ou objeto com propriedade
-      const salesArray = Array.isArray(salesData) ? salesData : (salesData as any)?.sales || []
-      const productsArray = Array.isArray(productsData) ? productsData : (productsData as any)?.products || []
-      const customersArray = Array.isArray(customersData) ? customersData : (customersData as any)?.customers || []
+      // Estrutura padronizada: { data, total, page, limit }
+      const salesArray = Array.isArray(salesData) ? salesData : (salesData as any)?.data || []
+      const productsArray = Array.isArray(productsData) ? productsData : (productsData as any)?.data || []
+      const customersArray = Array.isArray(customersData) ? customersData : (customersData as any)?.data || []
       
       setSales(salesArray)
       setProducts(productsArray)

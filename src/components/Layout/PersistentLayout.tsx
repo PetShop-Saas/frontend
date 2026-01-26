@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Image from 'next/image'
-import { Layout as AntLayout, Menu, Avatar, Dropdown, Button, Badge, Space, Typography } from 'antd'
+import { Layout as AntLayout, Menu, Avatar, Dropdown, Button, Badge, Space, Typography, Popover, List, Empty, Divider, message } from 'antd'
 import { usePersonalization } from '../../hooks/usePersonalization'
 import { useGlobalPersonalization } from '../../hooks/useGlobalPersonalization'
 import { usePermissions } from '../../hooks/usePermissions'
+import { apiService } from '../../services/api'
 import TrialBanner from '../TrialBanner'
 import PlanBadge from '../PlanBadge'
 import { 
@@ -46,6 +47,9 @@ interface LayoutProps {
 export default function PersistentLayout({ children }: LayoutProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [user, setUser] = useState<any>(null)
+  const [unreadCount, setUnreadCount] = useState(0)
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [loadingNotifications, setLoadingNotifications] = useState(false)
   const router = useRouter()
   const { settings: personalizationSettings } = usePersonalization()
   useGlobalPersonalization() // Aplicar configurações globais
@@ -73,6 +77,30 @@ export default function PersistentLayout({ children }: LayoutProps) {
       }
     }
   }, [router, userFromHook])
+
+  // Carregar notificações não lidas
+  useEffect(() => {
+    const loadNotifications = async () => {
+      try {
+        const [count, unreadList] = await Promise.all([
+          apiService.getUnreadCount(),
+          apiService.getUnreadNotifications()
+        ])
+        
+        setUnreadCount(typeof count === 'number' ? count : (count as any)?.count || 0)
+        setNotifications(Array.isArray(unreadList) ? unreadList.slice(0, 5) : [])
+      } catch (error) {
+        // Silenciar erro se não houver permissão ou token
+      }
+    }
+
+    if (user || userFromHook) {
+      loadNotifications()
+      // Atualizar a cada 30 segundos
+      const interval = setInterval(loadNotifications, 30000)
+      return () => clearInterval(interval)
+    }
+  }, [user, userFromHook])
 
   // Verificar se não é uma página pública
   const publicPages = ['/login', '/']
@@ -365,7 +393,7 @@ export default function PersistentLayout({ children }: LayoutProps) {
         collapsed={collapsed}
         className="custom-sidebar"
         style={{
-          background: personalizationSettings.sidebarColor || '#064e3b',
+          background: personalizationSettings.sidebarColor ?? '#064e3b',
           height: '100vh',
           overflow: 'auto',
           position: 'fixed',
@@ -379,7 +407,7 @@ export default function PersistentLayout({ children }: LayoutProps) {
         {/* Banner do tenant */}
         <div style={{ 
           width: '100%',
-          height: collapsed ? 60 : (personalizationSettings.bannerHeight || 80),
+          height: collapsed ? 60 : (personalizationSettings.bannerHeight ?? 80),
           margin: 0,
           padding: 0,
           display: 'block',
@@ -391,13 +419,13 @@ export default function PersistentLayout({ children }: LayoutProps) {
               src={personalizationSettings.bannerUrl} 
               alt={`Banner ${personalizationSettings.siteName || 'PetFlow'}`}
               width={collapsed ? 60 : 240}
-              height={collapsed ? 60 : (personalizationSettings.bannerHeight || 80)}
+              height={collapsed ? 60 : (personalizationSettings.bannerHeight ?? 80)}
               unoptimized
               style={{ 
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
-                borderRadius: collapsed ? 4 : (personalizationSettings.borderRadius || 8)
+                borderRadius: collapsed ? 4 : (personalizationSettings.borderRadius ?? 8)
               }} 
               onError={() => {
               }}
@@ -407,13 +435,13 @@ export default function PersistentLayout({ children }: LayoutProps) {
               src={personalizationSettings.logoUrl} 
               alt={`Logo ${personalizationSettings.siteName || 'PetFlow'}`}
               width={collapsed ? 60 : 240}
-              height={collapsed ? 60 : (personalizationSettings.bannerHeight || 80)}
+              height={collapsed ? 60 : (personalizationSettings.bannerHeight ?? 80)}
               unoptimized
               style={{ 
                 maxWidth: '100%',
                 maxHeight: '100%',
                 objectFit: 'contain',
-                borderRadius: collapsed ? 4 : (personalizationSettings.borderRadius || 8)
+                borderRadius: collapsed ? 4 : (personalizationSettings.borderRadius ?? 8)
               }} 
               onError={() => {
               }}
@@ -423,7 +451,7 @@ export default function PersistentLayout({ children }: LayoutProps) {
               src="/logo.png" 
               alt="PetFlow Logo"
               width={256}
-              height={collapsed ? 60 : (personalizationSettings.bannerHeight || 80)}
+              height={collapsed ? 60 : (personalizationSettings.bannerHeight ?? 80)}
               unoptimized
               style={{ 
                 width: '100%',
@@ -456,7 +484,7 @@ export default function PersistentLayout({ children }: LayoutProps) {
 
       <AntLayout style={{ marginLeft: collapsed ? 80 : 256 }}>
         <Header style={{ 
-          background: personalizationSettings.headerColor || '#fff', 
+          background: personalizationSettings.headerColor ?? '#fff', 
           padding: '0 24px', 
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
           position: 'fixed',
@@ -468,7 +496,7 @@ export default function PersistentLayout({ children }: LayoutProps) {
           alignItems: 'center',
           justifyContent: 'space-between',
           height: 64,
-          borderBottom: `2px solid ${personalizationSettings.primaryColor || '#16a34a'}`,
+          borderBottom: `2px solid ${personalizationSettings.primaryColor ?? '#16a34a'}`,
           fontSize: personalizationSettings.fontSize ? `${personalizationSettings.fontSize}px` : '14px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center' }}>
@@ -491,9 +519,128 @@ export default function PersistentLayout({ children }: LayoutProps) {
           <Space size="middle">
             <PlanBadge />
             
-            <Badge count={0} size="small">
-              <BellOutlined style={{ fontSize: 18, color: '#6b7280' }} />
-            </Badge>
+            <Popover
+              content={
+                <div style={{ width: 320, maxHeight: 400, overflowY: 'auto' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                    <Typography.Text strong>Notificações</Typography.Text>
+                    <Button 
+                      type="link" 
+                      size="small"
+                      onClick={() => router.push('/notifications')}
+                    >
+                      Ver todas
+                    </Button>
+                  </div>
+                  <Divider style={{ margin: '8px 0' }} />
+                  {loadingNotifications ? (
+                    <div style={{ textAlign: 'center', padding: 20 }}>
+                      <Typography.Text type="secondary">Carregando...</Typography.Text>
+                    </div>
+                  ) : notifications.length === 0 ? (
+                    <Empty 
+                      image={Empty.PRESENTED_IMAGE_SIMPLE}
+                      description="Nenhuma notificação"
+                      style={{ padding: 20 }}
+                    />
+                  ) : (
+                    <List
+                      dataSource={notifications}
+                      renderItem={(item: any) => (
+                        <List.Item
+                          style={{ 
+                            padding: '12px 0',
+                            cursor: 'pointer',
+                            borderBottom: '1px solid #f0f0f0'
+                          }}
+                          onClick={async () => {
+                            try {
+                              await apiService.markNotificationAsRead(item.id)
+                              setUnreadCount(Math.max(0, unreadCount - 1))
+                              setNotifications(notifications.filter(n => n.id !== item.id))
+                              if (item.actionUrl) {
+                                router.push(item.actionUrl)
+                              } else {
+                                router.push('/notifications')
+                              }
+                            } catch (error) {
+                              message.error('Erro ao marcar notificação como lida')
+                            }
+                          }}
+                        >
+                          <List.Item.Meta
+                            title={
+                              <Typography.Text 
+                                strong={!item.isRead}
+                                style={{ fontSize: 13 }}
+                              >
+                                {item.title}
+                              </Typography.Text>
+                            }
+                            description={
+                              <Typography.Text 
+                                type="secondary" 
+                                style={{ fontSize: 12 }}
+                                ellipsis={{ tooltip: item.message }}
+                              >
+                                {item.message}
+                              </Typography.Text>
+                            }
+                          />
+                        </List.Item>
+                      )}
+                    />
+                  )}
+                  {notifications.length > 0 && (
+                    <>
+                      <Divider style={{ margin: '8px 0' }} />
+                      <Button 
+                        type="link" 
+                        block
+                        onClick={async () => {
+                          try {
+                            await apiService.markAllNotificationsAsRead()
+                            setUnreadCount(0)
+                            setNotifications([])
+                            message.success('Todas as notificações foram marcadas como lidas')
+                          } catch (error: any) {
+                            message.error('Erro ao marcar todas como lidas')
+                          }
+                        }}
+                      >
+                        Marcar todas como lidas
+                      </Button>
+                    </>
+                  )}
+                </div>
+              }
+              title={null}
+              trigger="click"
+              placement="bottomRight"
+              overlayStyle={{ width: 320 }}
+            >
+              <Badge count={unreadCount} size="small" offset={[-5, 5]}>
+                <Button 
+                  type="text" 
+                  icon={<BellOutlined style={{ fontSize: 18, color: '#6b7280' }} />}
+                  onClick={() => {
+                    // Recarregar notificações ao abrir
+                    setLoadingNotifications(true)
+                    Promise.all([
+                      apiService.getUnreadCount(),
+                      apiService.getUnreadNotifications()
+                    ]).then(([count, unreadList]) => {
+                      setUnreadCount(typeof count === 'number' ? count : (count as any)?.count || 0)
+                      setNotifications(Array.isArray(unreadList) ? unreadList.slice(0, 5) : [])
+                    }).catch(() => {
+                      // Silenciar erro
+                    }).finally(() => {
+                      setLoadingNotifications(false)
+                    })
+                  }}
+                />
+              </Badge>
+            </Popover>
             
             <Dropdown
               menu={{ items: userMenuItems }}
@@ -539,10 +686,10 @@ export default function PersistentLayout({ children }: LayoutProps) {
           margin: '24px 16px', 
           padding: 24, 
           background: '#fff', 
-          borderRadius: personalizationSettings.borderRadius || 8,
+          borderRadius: personalizationSettings.borderRadius ?? 8,
           marginTop: '88px',
           fontSize: personalizationSettings.fontSize ? `${personalizationSettings.fontSize}px` : '14px',
-          fontFamily: personalizationSettings.fontFamily || 'Inter, sans-serif'
+          fontFamily: personalizationSettings.fontFamily ?? 'Inter, sans-serif'
         }}>
           {children}
         </Content>

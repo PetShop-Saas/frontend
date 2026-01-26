@@ -73,8 +73,8 @@ export default function Services() {
       setLoading(true)
       const servicesData = await apiService.getServices()
       
-      // Verificar se é um array direto ou objeto com propriedade services
-      const servicesArray = Array.isArray(servicesData) ? servicesData : (servicesData as any)?.services || []
+      // Estrutura padronizada: { data, total, page, limit }
+      const servicesArray = Array.isArray(servicesData) ? servicesData : (servicesData as any)?.data || []
       setServices(servicesArray)
     } catch (error) {
       message.error('Erro ao carregar serviços')

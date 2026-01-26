@@ -80,11 +80,11 @@ export default function Pets() {
         apiService.getCustomers()
       ])
       
-      // Processar dados dos pets
-      const processedPets = Array.isArray(petsData) ? petsData : (petsData as any)?.pets || []
+      // Estrutura padronizada: { data, total, page, limit }
+      const processedPets = Array.isArray(petsData) ? petsData : (petsData as any)?.data || []
 
-      // Processar dados dos clientes
-      const processedCustomers = Array.isArray(customersData) ? customersData : (customersData as any)?.customers || []
+      // Estrutura padronizada: { data, total, page, limit }
+      const processedCustomers = Array.isArray(customersData) ? customersData : (customersData as any)?.data || []
       
       // Mapear pets para incluir informações do cliente
       const petsWithCustomerInfo = processedPets.map((pet: any) => ({

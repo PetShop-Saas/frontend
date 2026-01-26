@@ -82,7 +82,12 @@ class ApiService {
     }
 
     const text = await response.text()
-    return text === '' ? null : text
+    if (text === '') return null
+    try {
+      return JSON.parse(text)
+    } catch (e) {
+      return text
+    }
   }
 
   // Auth endpoints
@@ -115,7 +120,7 @@ class ApiService {
 
   async updateCustomer(id: string, data: any) {
     return this.request(`/customers/${id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(data)
     })
   }
@@ -140,7 +145,7 @@ class ApiService {
 
   async updatePet(id: string, data: any) {
     return this.request(`/pets/${id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(data)
     })
   }
@@ -165,7 +170,7 @@ class ApiService {
 
   async updateAppointment(id: string, data: any) {
     return this.request(`/appointments/${id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(data)
     })
   }
@@ -190,7 +195,7 @@ class ApiService {
 
   async updateService(id: string, data: any) {
     return this.request(`/services/${id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(data)
     })
   }
@@ -215,7 +220,7 @@ class ApiService {
 
   async updateProduct(id: string, data: any) {
     return this.request(`/products/${id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(data)
     })
   }
@@ -240,7 +245,7 @@ class ApiService {
 
   async updateSale(id: string, data: any) {
     return this.request(`/sales/${id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(data)
     })
   }
@@ -359,7 +364,7 @@ class ApiService {
 
   async updateUser(id: string, data: any) {
     return this.request(`/users/${id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(data)
     })
   }
@@ -709,7 +714,7 @@ class ApiService {
 
   async updateTenant(id: string, data: { name?: string; subdomain?: string; isActive?: boolean }) {
     return this.request(`/admin/tenants/${id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(data)
     })
   }
@@ -1104,7 +1109,7 @@ class ApiService {
 
   async updateCashFlowEntry(id: string, data: any) {
     return this.request(`/cash-flow/${id}`, {
-      method: 'PUT',
+      method: 'PATCH',
       body: JSON.stringify(data)
     })
   }
@@ -1258,6 +1263,28 @@ class ApiService {
     return this.request('/settings/personalization', {
       method: 'PATCH',
       body: JSON.stringify(settings)
+    })
+  }
+
+  // Email Templates endpoints
+  async getEmailTemplatesList() {
+    return this.request('/settings/email-templates/list')
+  }
+
+  async getEmailTemplate(templateName: string) {
+    return this.request(`/settings/email-templates/${templateName}`)
+  }
+
+  async updateEmailTemplate(templateName: string, template: { html: string; text: string; subject?: string }) {
+    return this.request(`/settings/email-templates/${templateName}`, {
+      method: 'PATCH',
+      body: JSON.stringify(template)
+    })
+  }
+
+  async resetEmailTemplate(templateName: string) {
+    return this.request(`/settings/email-templates/${templateName}/reset`, {
+      method: 'POST'
     })
   }
 

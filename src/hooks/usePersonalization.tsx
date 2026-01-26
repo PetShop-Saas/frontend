@@ -49,24 +49,25 @@ export function usePersonalization() {
       const data = await apiService.getPersonalizationSettings()
       
       if (data) {
+        // Usar valores do banco de dados diretamente, sem fallbacks hardcoded
         const personalizationData = {
           bannerUrl: typeof (data as any).bannerUrl === 'string' ? (data as any).bannerUrl : '',
           logoUrl: typeof (data as any).logoUrl === 'string' ? (data as any).logoUrl : '', 
-          bannerHeight: (data as any).bannerHeight || 80,
-          logoSize: (data as any).logoSize || 60,
-          primaryColor: typeof (data as any).primaryColor === 'string' ? (data as any).primaryColor : '#16a34a',
-          secondaryColor: typeof (data as any).secondaryColor === 'string' ? (data as any).secondaryColor : '#15803d',
-          sidebarColor: typeof (data as any).sidebarColor === 'string' ? (data as any).sidebarColor : '#064e3b',
-          headerColor: typeof (data as any).headerColor === 'string' ? (data as any).headerColor : '#ffffff',
-          borderRadius: (data as any).borderRadius || 8,
-          fontSize: (data as any).fontSize || 14,
-          fontFamily: (data as any).fontFamily || 'Inter, sans-serif',
-          sidebarCollapsed: (data as any).sidebarCollapsed || false,
-          showBanner: (data as any).showBanner !== false,
-          showLogo: (data as any).showLogo !== false,
-          siteName: (data as any).siteName || 'PetShop',
-          siteDescription: (data as any).siteDescription || 'Sistema de gestão para petshops',
-          siteTagline: (data as any).siteTagline || 'Cuidando do seu melhor amigo'
+          bannerHeight: (data as any).bannerHeight ?? null,
+          logoSize: (data as any).logoSize ?? null,
+          primaryColor: typeof (data as any).primaryColor === 'string' ? (data as any).primaryColor : null,
+          secondaryColor: typeof (data as any).secondaryColor === 'string' ? (data as any).secondaryColor : null,
+          sidebarColor: typeof (data as any).sidebarColor === 'string' ? (data as any).sidebarColor : null,
+          headerColor: typeof (data as any).headerColor === 'string' ? (data as any).headerColor : null,
+          borderRadius: (data as any).borderRadius ?? null,
+          fontSize: (data as any).fontSize ?? null,
+          fontFamily: typeof (data as any).fontFamily === 'string' ? (data as any).fontFamily : null,
+          sidebarCollapsed: (data as any).sidebarCollapsed ?? null,
+          showBanner: (data as any).showBanner ?? null,
+          showLogo: (data as any).showLogo ?? null,
+          siteName: typeof (data as any).siteName === 'string' ? (data as any).siteName : null,
+          siteDescription: typeof (data as any).siteDescription === 'string' ? (data as any).siteDescription : null,
+          siteTagline: typeof (data as any).siteTagline === 'string' ? (data as any).siteTagline : null
         }
         
         // Converter URLs de imagens para URLs com token
@@ -92,9 +93,9 @@ export function usePersonalization() {
 
   // Escutar eventos de atualização de personalização
   useEffect(() => {
-    const handlePersonalizationUpdate = (event: CustomEvent) => {
-      const newSettings = event.detail
-      setSettings(prev => ({ ...prev, ...newSettings }))
+    const handlePersonalizationUpdate = () => {
+      // Recarregar do backend quando houver atualização
+      loadSettings()
     }
 
     window.addEventListener('personalizationUpdated', handlePersonalizationUpdate as EventListener)

@@ -148,24 +148,25 @@ export default function Personalization() {
       const settingsData = await apiService.getPersonalizationSettings()
       
       if (settingsData) {
+        // Usar valores do banco de dados diretamente, sem fallbacks hardcoded
         const personalizationData = {
           bannerUrl: (settingsData as any).bannerUrl || '',
           logoUrl: (settingsData as any).logoUrl || '',
-          bannerHeight: (settingsData as any).bannerHeight || 80,
-          logoSize: (settingsData as any).logoSize || 60,
-          primaryColor: typeof (settingsData as any).primaryColor === 'string' ? (settingsData as any).primaryColor : '#16a34a',
-          secondaryColor: typeof (settingsData as any).secondaryColor === 'string' ? (settingsData as any).secondaryColor : '#15803d',
-          sidebarColor: typeof (settingsData as any).sidebarColor === 'string' ? (settingsData as any).sidebarColor : '#064e3b',
-          headerColor: typeof (settingsData as any).headerColor === 'string' ? (settingsData as any).headerColor : '#ffffff',
-          borderRadius: (settingsData as any).borderRadius || 8,
-          fontSize: (settingsData as any).fontSize || 14,
-          fontFamily: (settingsData as any).fontFamily || 'Inter, sans-serif',
-          sidebarCollapsed: (settingsData as any).sidebarCollapsed || false,
-          showBanner: (settingsData as any).showBanner !== false,
-          showLogo: (settingsData as any).showLogo !== false,
-          siteName: (settingsData as any).siteName || 'PetShop',
-          siteDescription: (settingsData as any).siteDescription || 'Sistema de gestão para petshops',
-          siteTagline: (settingsData as any).siteTagline || 'Cuidando do seu melhor amigo'
+          bannerHeight: (settingsData as any).bannerHeight ?? null,
+          logoSize: (settingsData as any).logoSize ?? null,
+          primaryColor: typeof (settingsData as any).primaryColor === 'string' ? (settingsData as any).primaryColor : null,
+          secondaryColor: typeof (settingsData as any).secondaryColor === 'string' ? (settingsData as any).secondaryColor : null,
+          sidebarColor: typeof (settingsData as any).sidebarColor === 'string' ? (settingsData as any).sidebarColor : null,
+          headerColor: typeof (settingsData as any).headerColor === 'string' ? (settingsData as any).headerColor : null,
+          borderRadius: (settingsData as any).borderRadius ?? null,
+          fontSize: (settingsData as any).fontSize ?? null,
+          fontFamily: typeof (settingsData as any).fontFamily === 'string' ? (settingsData as any).fontFamily : null,
+          sidebarCollapsed: (settingsData as any).sidebarCollapsed ?? null,
+          showBanner: (settingsData as any).showBanner ?? null,
+          showLogo: (settingsData as any).showLogo ?? null,
+          siteName: typeof (settingsData as any).siteName === 'string' ? (settingsData as any).siteName : null,
+          siteDescription: typeof (settingsData as any).siteDescription === 'string' ? (settingsData as any).siteDescription : null,
+          siteTagline: typeof (settingsData as any).siteTagline === 'string' ? (settingsData as any).siteTagline : null
         }
         
         // Converter URLs de imagens para URLs com token
@@ -258,17 +259,33 @@ export default function Personalization() {
       setSaving(true)
       const values = await form.validateFields()
       
-      const settingsToSave = {
-        ...values,
-        ...settings
-      }
+      const settingsToSave: any = {}
       
-      await apiService.updatePersonalizationSettings(settingsToSave)
+      Object.keys(values).forEach(key => {
+        const value = values[key]
+        if (key === 'fontSize' || key === 'borderRadius' || key === 'bannerHeight' || key === 'logoSize') {
+          settingsToSave[key] = value !== null && value !== undefined ? Number(value) : null
+        } else if (key === 'sidebarCollapsed' || key === 'showBanner' || key === 'showLogo') {
+          settingsToSave[key] = Boolean(value)
+        } else {
+          settingsToSave[key] = value !== null && value !== undefined ? String(value) : null
+        }
+      })
+      
+      const response = await apiService.updatePersonalizationSettings(settingsToSave)
       message.success('Personalizações salvas com sucesso!')
       
-      // Disparar evento para atualizar outros componentes
+      if (response && (response as any).settings) {
+        const updatedSettings = (response as any).settings
+        setSettings(prev => ({ ...prev, ...updatedSettings }))
+        form.setFieldsValue(updatedSettings)
+      } else {
+        await loadSettings()
+      }
+      
       if (typeof window !== 'undefined') {
-        window.dispatchEvent(new CustomEvent('personalizationUpdated', { detail: settingsToSave }))
+        const finalSettings = response && (response as any).settings ? (response as any).settings : settingsToSave
+        window.dispatchEvent(new CustomEvent('personalizationUpdated', { detail: finalSettings }))
       }
     } catch (error: any) {
       console.error('Erro ao salvar:', error)
@@ -540,7 +557,7 @@ export default function Personalization() {
                 </Col>
                 <Col xs={24} md={8}>
                   <Form.Item label="Tamanho da Fonte (px)" name="fontSize">
-                    <Input type="number" min={10} max={20} />
+                    <Input type="number" min={10} />
                   </Form.Item>
                 </Col>
                 <Col xs={24} md={8}>

@@ -102,17 +102,17 @@ export default function Appointments() {
         apiService.getServices()
       ])
       
-      // Processar dados dos agendamentos
-      const processedAppointments = Array.isArray(appointmentsData) ? appointmentsData : (appointmentsData as any)?.appointments || []
+      // Estrutura padronizada: { data, total, page, limit }
+      const processedAppointments = Array.isArray(appointmentsData) ? appointmentsData : (appointmentsData as any)?.data || []
       
-      // Processar dados dos clientes
-      const processedCustomers = Array.isArray(customersData) ? customersData : (customersData as any)?.customers || []
+      // Estrutura padronizada: { data, total, page, limit }
+      const processedCustomers = Array.isArray(customersData) ? customersData : (customersData as any)?.data || []
       
-      // Processar dados dos pets
-      const processedPets = Array.isArray(petsData) ? petsData : (petsData as any)?.pets || []
+      // Estrutura padronizada: { data, total, page, limit }
+      const processedPets = Array.isArray(petsData) ? petsData : (petsData as any)?.data || []
       
-      // Processar dados dos serviços
-      const processedServices = Array.isArray(servicesData) ? servicesData : (servicesData as any)?.services || []
+      // Estrutura padronizada: { data, total, page, limit }
+      const processedServices = Array.isArray(servicesData) ? servicesData : (servicesData as any)?.data || []
       
       // Mapear agendamentos para incluir informações relacionadas
       const appointmentsWithInfo = processedAppointments.map((appointment: any) => ({

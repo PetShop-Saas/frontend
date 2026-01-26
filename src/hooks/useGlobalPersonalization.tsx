@@ -13,9 +13,13 @@ export function useGlobalPersonalization() {
       document.body.style.fontFamily = settings.fontFamily
     }
 
-    if (settings.fontSize) {
-      document.documentElement.style.setProperty('--font-size', `${settings.fontSize}px`)
-      document.body.style.fontSize = `${settings.fontSize}px`
+    if (settings.fontSize !== null && settings.fontSize !== undefined) {
+      const fontSizeValue = `${settings.fontSize}px`
+      // Atualizar variável CSS
+      document.documentElement.style.setProperty('--font-size', fontSizeValue, 'important')
+      // Aplicar diretamente no html e body para garantir
+      document.documentElement.style.setProperty('font-size', fontSizeValue, 'important')
+      document.body.style.setProperty('font-size', fontSizeValue, 'important')
     }
 
     // Aplicar configurações de cores

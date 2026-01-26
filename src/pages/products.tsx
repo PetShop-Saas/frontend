@@ -281,7 +281,8 @@ export default function Products() {
     try {
       setLoading(true)
       const productsData = await apiService.getProducts()
-      const productsArray = Array.isArray(productsData) ? productsData : (productsData as any)?.products || []
+      // Estrutura padronizada: { data, total, page, limit }
+      const productsArray = Array.isArray(productsData) ? productsData : (productsData as any)?.data || []
       setProducts(productsArray)
     } catch (error) {
       message.error('Erro ao carregar produtos')

@@ -65,9 +65,8 @@ export default function Customers() {
       setLoading(true)
       const response = await apiService.getCustomers() as any
       
-      // Se a resposta for um array, usa diretamente
-      // Se for um objeto com propriedade 'customers', extrai o array
-      const customersData = Array.isArray(response) ? response : response?.customers || []
+      // Estrutura padronizada: { data, total, page, limit }
+      const customersData = Array.isArray(response) ? response : (response?.data || [])
       
       setCustomers(customersData)
     } catch (error) {

@@ -124,10 +124,12 @@ export default function Dashboard() {
           <Card 
             title="Atividade Recente" 
             className="shadow-sm"
-            headStyle={{ 
-              backgroundColor: '#f9fafb', 
-              borderBottom: '1px solid #e5e7eb',
-              color: '#374151'
+            styles={{ 
+              header: {
+                backgroundColor: '#f9fafb', 
+                borderBottom: '1px solid #e5e7eb',
+                color: '#374151'
+              }
             }}
           >
             <List

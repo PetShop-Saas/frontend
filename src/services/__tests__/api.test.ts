@@ -160,7 +160,7 @@ describe('ApiService', () => {
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/customers/1'),
         expect.objectContaining({
-          method: 'PUT',
+          method: 'PATCH',
           body: JSON.stringify(updatedData),
         })
       )
@@ -243,7 +243,7 @@ describe('ApiService', () => {
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/pets/1'),
         expect.objectContaining({
-          method: 'PUT',
+          method: 'PATCH',
           body: JSON.stringify(updatedData),
         })
       )

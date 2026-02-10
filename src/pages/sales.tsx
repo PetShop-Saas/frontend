@@ -33,6 +33,7 @@ import {
   DollarOutlined,
   UserOutlined
 } from '@ant-design/icons'
+import { SALE_STATUS_OPTIONS, getTagOption, TAG_CLASS } from '../constants/tagConfig'
 import dayjs from 'dayjs'
 
 const { Search } = Input
@@ -208,11 +209,8 @@ export default function Sales() {
     return matchesSearch && matchesStatus && matchesCustomer
   })
 
-  const statusOptions = [
-    { value: 'PENDING', label: 'Pendente', color: 'orange', icon: <CloseCircleOutlined /> },
-    { value: 'COMPLETED', label: 'Concluída', color: 'green', icon: <CheckCircleOutlined /> },
-    { value: 'CANCELLED', label: 'Cancelada', color: 'red', icon: <CloseCircleOutlined /> }
-  ]
+  const statusOptions = SALE_STATUS_OPTIONS
+  const getStatusConfig = (status: string) => getTagOption(SALE_STATUS_OPTIONS, status)
 
   const paymentMethods = [
     { value: 'CASH', label: 'Dinheiro' },
@@ -221,10 +219,6 @@ export default function Sales() {
     { value: 'PIX', label: 'PIX' },
     { value: 'TRANSFER', label: 'Transferência' }
   ]
-
-  const getStatusConfig = (status: string) => {
-    return statusOptions.find(opt => opt.value === status) || statusOptions[0]
-  }
 
   const columns = [
     {
@@ -278,7 +272,7 @@ export default function Sales() {
       render: (status: string) => {
         const config = getStatusConfig(status)
         return (
-          <Tag color={config.color} icon={config.icon}>
+          <Tag color={config.color} icon={config.icon} className={TAG_CLASS}>
             {config.label}
           </Tag>
         )
@@ -695,7 +689,7 @@ export default function Sales() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Status:</span>
-                          <Tag color={getStatusConfig(selectedSale.status).color}>
+                          <Tag color={getStatusConfig(selectedSale.status).color} className={TAG_CLASS}>
                             {getStatusConfig(selectedSale.status).label}
                           </Tag>
                         </div>

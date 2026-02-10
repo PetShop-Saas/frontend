@@ -167,6 +167,7 @@ export const PermissionProvider = ({ children }: { children: React.ReactNode }) 
       '/communications': '/communications',
       '/notifications': '/notifications',
       '/tickets': '/tickets',
+      '/management': '/management',
       '/unified-access-management': '/unified-access-management',
       '/personalization': '/personalization',
       '/audit-logs': '/audit-logs',

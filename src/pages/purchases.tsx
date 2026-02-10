@@ -34,6 +34,7 @@ import {
   ShopOutlined,
   DollarOutlined
 } from '@ant-design/icons'
+import { PURCHASE_STATUS_OPTIONS, getTagOption, TAG_CLASS } from '../constants/tagConfig'
 import dayjs from 'dayjs'
 
 const { Search } = Input
@@ -210,15 +211,8 @@ export default function Purchases() {
     return matchesSearch && matchesStatus && matchesSupplier
   })
 
-  const statusOptions = [
-    { value: 'PENDING', label: 'Pendente', color: 'orange', icon: <ClockCircleOutlined /> },
-    { value: 'RECEIVED', label: 'Recebida', color: 'green', icon: <CheckCircleOutlined /> },
-    { value: 'CANCELLED', label: 'Cancelada', color: 'red', icon: <CloseCircleOutlined /> }
-  ]
-
-  const getStatusConfig = (status: string) => {
-    return statusOptions.find(opt => opt.value === status) || statusOptions[0]
-  }
+  const statusOptions = PURCHASE_STATUS_OPTIONS
+  const getStatusConfig = (status: string) => getTagOption(PURCHASE_STATUS_OPTIONS, status)
 
   const columns = [
     {
@@ -272,7 +266,7 @@ export default function Purchases() {
       render: (status: string) => {
         const config = getStatusConfig(status)
         return (
-          <Tag color={config.color} icon={config.icon}>
+          <Tag color={config.color} icon={config.icon} className={TAG_CLASS}>
             {config.label}
           </Tag>
         )
@@ -677,7 +671,7 @@ export default function Purchases() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Status:</span>
-                          <Tag color={getStatusConfig(selectedPurchase.status).color}>
+                          <Tag color={getStatusConfig(selectedPurchase.status).color} className={TAG_CLASS}>
                             {getStatusConfig(selectedPurchase.status).label}
                           </Tag>
                         </div>

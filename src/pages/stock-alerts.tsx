@@ -6,8 +6,7 @@ export default function StockAlertsRedirect() {
   const router = useRouter()
 
   useEffect(() => {
-    // Redirecionar para inventory com filtro de estoque baixo
-    router.replace('/inventory?onlyLowStock=true')
+    router.replace('/products?tab=alerts')
   }, [router])
 
   return null

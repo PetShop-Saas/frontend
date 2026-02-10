@@ -20,6 +20,7 @@ import {
   ArrowLeftOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import { APPOINTMENT_STATUS_OPTIONS, getTagOption, TAG_CLASS } from '../constants/tagConfig'
 
 const { Option } = Select
 const { TextArea } = Input
@@ -141,13 +142,22 @@ export default function CalendarPage() {
 
   const handleSubmit = async (values: any) => {
     try {
-      // Converter data e hora para formato ISO
-      const dateTime = dayjs(values.date).format('YYYY-MM-DD') + 'T' + dayjs(values.time).format('HH:mm:ss')
-      
+      // Backend espera: date (ISO), customerId/petId/serviceId (UUID), status?, notes?
+      const date = dayjs(values.date)
+      const time = dayjs(values.time)
+      const combined = date
+        .hour(time.hour())
+        .minute(time.minute())
+        .second(0)
+        .millisecond(0)
+
       const appointmentData = {
-        ...values,
-        date: dateTime,
-        status: values.status || 'SCHEDULED'
+        date: combined.toISOString(),
+        customerId: values.customerId,
+        petId: values.petId,
+        serviceId: values.serviceId,
+        status: values.status || 'SCHEDULED',
+        notes: values.notes,
       }
 
       if (isEditing && selectedAppointment) {
@@ -164,7 +174,7 @@ export default function CalendarPage() {
       form.resetFields()
       loadData()
     } catch (error) {
-      message.error('Erro ao salvar agendamento')
+      message.error(error instanceof Error ? error.message : 'Erro ao salvar agendamento')
     }
   }
 
@@ -227,18 +237,8 @@ export default function CalendarPage() {
     return pets.filter(pet => pet.customerId === customerId)
   }
 
-  const statusOptions = [
-    { value: 'SCHEDULED', label: 'Agendado', color: 'blue', icon: <ClockCircleOutlined /> },
-    { value: 'CONFIRMED', label: 'Confirmado', color: 'green', icon: <CheckCircleOutlined /> },
-    { value: 'IN_PROGRESS', label: 'Em Andamento', color: 'orange', icon: <ClockCircleOutlined /> },
-    { value: 'COMPLETED', label: 'Concluído', color: 'purple', icon: <CheckCircleOutlined /> },
-    { value: 'CANCELLED', label: 'Cancelado', color: 'red', icon: <CloseCircleOutlined /> },
-    { value: 'NO_SHOW', label: 'Não Compareceu', color: 'gray', icon: <CloseCircleOutlined /> }
-  ]
-
-  const getStatusConfig = (status: string) => {
-    return statusOptions.find(opt => opt.value === status) || statusOptions[0]
-  }
+  const statusOptions = APPOINTMENT_STATUS_OPTIONS
+  const getStatusConfig = (status: string) => getTagOption(APPOINTMENT_STATUS_OPTIONS, status)
 
   // Converter agendamentos para formato do calendário
   const events = appointments.map(appointment => {
@@ -448,22 +448,31 @@ export default function CalendarPage() {
                   ))}
                 </Select>
               </Form.Item>
-              <Form.Item
-                name="petId"
-                label="Pet"
-                rules={[{ required: true, message: 'Pet é obrigatório' }]}
-              >
-                <Select 
-                  placeholder="Selecione o pet"
-                  size="large"
-                  disabled={!form.getFieldValue('customerId')}
-                >
-                  {getPetsByCustomer(form.getFieldValue('customerId')).map(pet => (
-                    <Option key={pet.id} value={pet.id}>
-                      {pet.name} ({pet.species})
-                    </Option>
-                  ))}
-                </Select>
+              <Form.Item shouldUpdate={(prev, cur) => prev.customerId !== cur.customerId} noStyle>
+                {() => {
+                  const customerId = form.getFieldValue('customerId')
+                  return (
+                    <Form.Item
+                      name="petId"
+                      label="Pet"
+                      rules={[{ required: true, message: 'Pet é obrigatório' }]}
+                    >
+                      <Select
+                        placeholder={customerId ? "Selecione o pet" : "Selecione um cliente primeiro"}
+                        size="large"
+                        disabled={!customerId}
+                        showSearch
+                        optionFilterProp="children"
+                      >
+                        {getPetsByCustomer(customerId).map(pet => (
+                          <Option key={pet.id} value={pet.id}>
+                            {pet.name} ({pet.species})
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  )
+                }}
               </Form.Item>
             </div>
 
@@ -556,7 +565,7 @@ export default function CalendarPage() {
                     <div>
                       <span className="font-medium text-gray-700">Status:</span>
                       <div className="mt-1">
-                        <Tag color={getStatusConfig(selectedAppointment.status).color} icon={getStatusConfig(selectedAppointment.status).icon}>
+                        <Tag color={getStatusConfig(selectedAppointment.status).color} icon={getStatusConfig(selectedAppointment.status).icon} className={TAG_CLASS}>
                           {getStatusConfig(selectedAppointment.status).label}
                         </Tag>
                       </div>

@@ -20,6 +20,7 @@ import {
   CloseCircleOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import { APPOINTMENT_STATUS_OPTIONS, getTagOption, TAG_CLASS } from '../constants/tagConfig'
 
 const { Option } = Select
 const { TextArea } = Input
@@ -140,13 +141,22 @@ export default function Appointments() {
 
   const handleSubmit = async (values: any) => {
     try {
-      // Converter data e hora para formato ISO
-      const dateTime = dayjs(values.date).format('YYYY-MM-DD') + 'T' + dayjs(values.time).format('HH:mm:ss')
-      
+      // Backend espera: date (ISO), customerId/petId/serviceId (UUID), status?, notes?
+      const date = dayjs(values.date)
+      const time = dayjs(values.time)
+      const combined = date
+        .hour(time.hour())
+        .minute(time.minute())
+        .second(0)
+        .millisecond(0)
+
       const appointmentData = {
-        ...values,
-        date: dateTime,
-        status: values.status || 'SCHEDULED'
+        date: combined.toISOString(),
+        customerId: values.customerId,
+        petId: values.petId,
+        serviceId: values.serviceId,
+        status: values.status || 'SCHEDULED',
+        notes: values.notes,
       }
 
       if (isEditing && selectedAppointment) {
@@ -163,7 +173,7 @@ export default function Appointments() {
       form.resetFields()
       loadData()
     } catch (error) {
-      message.error('Erro ao salvar agendamento')
+      message.error(error instanceof Error ? error.message : 'Erro ao salvar agendamento')
     }
   }
 
@@ -217,28 +227,18 @@ export default function Appointments() {
   }
 
   const filteredAppointments = appointments.filter(appointment => {
-    const matchesSearch = appointment.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    appointment.petName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         appointment.serviceName.toLowerCase().includes(searchTerm.toLowerCase())
-    
+    const term = searchTerm.toLowerCase()
+    const matchesSearch = !searchTerm ||
+      (appointment.customerName?.toLowerCase().includes(term)) ||
+      (appointment.petName?.toLowerCase().includes(term)) ||
+      (appointment.serviceName?.toLowerCase().includes(term))
     const matchesStatus = !filterStatus || appointment.status === filterStatus
     const matchesCustomer = !filterCustomer || appointment.customerId === filterCustomer
-    
     return matchesSearch && matchesStatus && matchesCustomer
   })
 
-  const statusOptions = [
-    { value: 'SCHEDULED', label: 'Agendado', color: 'blue', icon: <ClockCircleOutlined /> },
-    { value: 'CONFIRMED', label: 'Confirmado', color: 'green', icon: <CheckCircleOutlined /> },
-    { value: 'IN_PROGRESS', label: 'Em Andamento', color: 'orange', icon: <ClockCircleOutlined /> },
-    { value: 'COMPLETED', label: 'Concluído', color: 'purple', icon: <CheckCircleOutlined /> },
-    { value: 'CANCELLED', label: 'Cancelado', color: 'red', icon: <CloseCircleOutlined /> },
-    { value: 'NO_SHOW', label: 'Não Compareceu', color: 'gray', icon: <CloseCircleOutlined /> }
-  ]
-
-  const getStatusConfig = (status: string) => {
-    return statusOptions.find(opt => opt.value === status) || statusOptions[0]
-  }
+  const statusOptions = APPOINTMENT_STATUS_OPTIONS
+  const getStatusConfig = (status: string) => getTagOption(APPOINTMENT_STATUS_OPTIONS, status)
 
   const getPetsByCustomer = (customerId: string) => {
     return pets.filter(pet => pet.customerId === customerId)
@@ -251,14 +251,14 @@ export default function Appointments() {
       render: (_, record) => (
         <div>
           <div className="font-medium text-gray-900">
-            {dayjs(record.date).format('DD/MM/YYYY')}
+            {record.date ? dayjs(record.date).format('DD/MM/YYYY') : '-'}
           </div>
           <div className="text-sm text-gray-500">
-            {dayjs(record.date).format('HH:mm')}
+            {record.date ? dayjs(record.date).format('HH:mm') : '-'}
           </div>
         </div>
       ),
-      sorter: (a, b) => dayjs(a.date).unix() - dayjs(b.date).unix(),
+      sorter: (a, b) => dayjs(a.date || 0).unix() - dayjs(b.date || 0).unix(),
     },
     {
       title: 'Cliente',
@@ -309,7 +309,7 @@ export default function Appointments() {
           <div>
             <div className="font-medium text-gray-900">{record.serviceName}</div>
             <div className="text-sm text-gray-500">
-              R$ {record.servicePrice.toFixed(2)} • {record.serviceDuration}min
+              R$ {(record.servicePrice ?? 0).toFixed(2)} • {record.serviceDuration ?? 0}min
             </div>
           </div>
         </div>
@@ -322,7 +322,7 @@ export default function Appointments() {
       render: (status) => {
         const config = getStatusConfig(status)
         return (
-          <Tag color={config.color} icon={config.icon}>
+          <Tag color={config.color} icon={config.icon} className={TAG_CLASS}>
             {config.label}
           </Tag>
         )
@@ -616,22 +616,31 @@ export default function Appointments() {
                   ))}
                 </Select>
               </Form.Item>
-              <Form.Item
-                name="petId"
-                label="Pet"
-                rules={[{ required: true, message: 'Pet é obrigatório' }]}
-              >
-                <Select 
-                  placeholder="Selecione o pet"
-                  size="large"
-                  disabled={!form.getFieldValue('customerId')}
-                >
-                  {getPetsByCustomer(form.getFieldValue('customerId')).map(pet => (
-                    <Option key={pet.id} value={pet.id}>
-                      {pet.name} ({pet.species})
-                    </Option>
-                  ))}
-                </Select>
+              <Form.Item shouldUpdate={(prev, cur) => prev.customerId !== cur.customerId} noStyle>
+                {() => {
+                  const customerId = form.getFieldValue('customerId')
+                  return (
+                    <Form.Item
+                      name="petId"
+                      label="Pet"
+                      rules={[{ required: true, message: 'Pet é obrigatório' }]}
+                    >
+                      <Select
+                        placeholder={customerId ? "Selecione o pet" : "Selecione um cliente primeiro"}
+                        size="large"
+                        disabled={!customerId}
+                        showSearch
+                        optionFilterProp="children"
+                      >
+                        {getPetsByCustomer(customerId).map(pet => (
+                          <Option key={pet.id} value={pet.id}>
+                            {pet.name} ({pet.species})
+                          </Option>
+                        ))}
+                      </Select>
+                    </Form.Item>
+                  )
+                }}
               </Form.Item>
             </div>
 
@@ -724,10 +733,10 @@ export default function Appointments() {
                       className="bg-green-100 text-green-600 mb-4"
                     />
                     <h3 className="text-xl font-bold text-gray-900">
-                      {dayjs(selectedAppointment.date).format('DD/MM/YYYY')}
+                      {selectedAppointment.date ? dayjs(selectedAppointment.date).format('DD/MM/YYYY') : '-'}
                     </h3>
                     <p className="text-gray-600">
-                      {dayjs(selectedAppointment.date).format('HH:mm')}
+                      {selectedAppointment.date ? dayjs(selectedAppointment.date).format('HH:mm') : '-'}
                     </p>
                     </div>
                 </Col>
@@ -736,7 +745,7 @@ export default function Appointments() {
                     <div>
                       <span className="font-medium text-gray-700">Status:</span>
                       <div className="mt-1">
-                        <Tag color={getStatusConfig(selectedAppointment.status).color} icon={getStatusConfig(selectedAppointment.status).icon}>
+                        <Tag color={getStatusConfig(selectedAppointment.status).color} icon={getStatusConfig(selectedAppointment.status).icon} className={TAG_CLASS}>
                           {getStatusConfig(selectedAppointment.status).label}
                         </Tag>
                       </div>

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { Card, Table, Button, Modal, Form, Input, Select, DatePicker, message, Tag, Space, Statistic, Row, Col } from 'antd'
-import { PlusOutlined, ArrowUpOutlined, ArrowDownOutlined, SyncOutlined } from '@ant-design/icons'
+import { PlusOutlined } from '@ant-design/icons'
 import { apiService } from '../services/api'
-
+import { getStockMovementTypeOption, TAG_CLASS } from '../constants/tagConfig'
 
 const { Option } = Select
 const { TextArea } = Input
@@ -56,24 +56,6 @@ export default function StockMovements() {
     }
   }
 
-  const getTypeColor = (type: string) => {
-    const colors: any = {
-      ENTRY: 'green',
-      EXIT: 'red',
-      ADJUSTMENT: 'blue'
-    }
-    return colors[type] || 'default'
-  }
-
-  const getTypeIcon = (type: string) => {
-    const icons: any = {
-      ENTRY: <ArrowUpOutlined />,
-      EXIT: <ArrowDownOutlined />,
-      ADJUSTMENT: <SyncOutlined />
-    }
-    return icons[type]
-  }
-
   const columns = [
     {
       title: 'Data',
@@ -90,11 +72,14 @@ export default function StockMovements() {
       title: 'Tipo',
       dataIndex: 'type',
       key: 'type',
-      render: (type: string) => (
-        <Tag color={getTypeColor(type)} icon={getTypeIcon(type)}>
-          {type === 'ENTRY' ? 'Entrada' : type === 'EXIT' ? 'Saída' : 'Ajuste'}
-        </Tag>
-      )
+      render: (type: string) => {
+        const opt = getStockMovementTypeOption(type)
+        return (
+          <Tag color={opt.color} icon={opt.icon} className={TAG_CLASS}>
+            {opt.label}
+          </Tag>
+        )
+      }
     },
     {
       title: 'Quantidade',

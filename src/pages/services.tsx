@@ -31,6 +31,7 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined
 } from '@ant-design/icons'
+import { ACTIVE_INACTIVE_OPTIONS, getTagOption, TAG_CLASS } from '../constants/tagConfig'
 
 const { Search } = Input
 
@@ -157,24 +158,18 @@ export default function Services() {
   }
 
   const filteredServices = services.filter(service => {
-    const matchesSearch = service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    service.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    
-    const matchesStatus = !filterStatus || 
-                         (filterStatus === 'active' && service.isActive) ||
-                         (filterStatus === 'inactive' && !service.isActive)
-    
+    const term = searchTerm.toLowerCase()
+    const matchesSearch = !searchTerm ||
+      (service.name?.toLowerCase().includes(term)) ||
+      (service.description?.toLowerCase().includes(term))
+    const matchesStatus = !filterStatus ||
+      (filterStatus === 'active' && service.isActive) ||
+      (filterStatus === 'inactive' && !service.isActive)
     return matchesSearch && matchesStatus
   })
 
-  const statusOptions = [
-    { value: 'active', label: 'Ativos', color: 'green', icon: <CheckCircleOutlined /> },
-    { value: 'inactive', label: 'Inativos', color: 'red', icon: <CloseCircleOutlined /> }
-  ]
-
-  const getStatusConfig = (status: boolean) => {
-    return status ? statusOptions[0] : statusOptions[1]
-  }
+  const statusOptions = ACTIVE_INACTIVE_OPTIONS
+  const getStatusConfig = (isActive: boolean) => getTagOption(ACTIVE_INACTIVE_OPTIONS, isActive ? 'active' : 'inactive')
 
   const columns = [
     {
@@ -203,7 +198,7 @@ export default function Services() {
       key: 'price',
       render: (price: number) => (
         <span className="text-lg font-bold text-green-600">
-          R$ {price.toFixed(2)}
+          R$ {(price ?? 0).toFixed(2)}
         </span>
       ),
     },
@@ -222,7 +217,7 @@ export default function Services() {
       render: (isActive: boolean) => {
         const config = getStatusConfig(isActive)
         return (
-          <Tag color={config.color} icon={config.icon}>
+          <Tag color={config.color} icon={config.icon} className={TAG_CLASS}>
             {config.label}
           </Tag>
         )
@@ -600,7 +595,7 @@ export default function Services() {
                         <div className="flex justify-between">
                           <span className="text-gray-600">Preço:</span>
                           <span className="font-bold text-green-600">
-                            R$ {selectedService.price.toFixed(2)}
+                            R$ {(selectedService.price ?? 0).toFixed(2)}
                           </span>
                     </div>
                         <div className="flex justify-between">
@@ -611,7 +606,7 @@ export default function Services() {
                 </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Status:</span>
-                          <Tag color={selectedService.isActive ? 'green' : 'red'}>
+                          <Tag color={selectedService.isActive ? 'green' : 'red'} className={TAG_CLASS}>
                             {selectedService.isActive ? 'Ativo' : 'Inativo'}
                           </Tag>
                 </div>

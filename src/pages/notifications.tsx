@@ -61,12 +61,28 @@ import {
   NotificationOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import {
+  TAG_CLASS,
+  getTagOption,
+  NOTIFICATION_TYPE_OPTIONS,
+  NOTIFICATION_CATEGORY_OPTIONS,
+  NOTIFICATION_PRIORITY_OPTIONS
+} from '../constants/tagConfig'
 
 const { Search } = Input
 const { Option } = Select
 const { TextArea } = Input
 const { TabPane } = Tabs
 const { Text, Title } = Typography
+
+function stripEmoji(str: string): string {
+  if (typeof str !== 'string') return str
+  return str
+    .replace(/[\u2600-\u26FF\u2700-\u27BF\u2300-\u23FF\u2B50\u231A\u231B\u25AA-\u25FE\u2934\u2935\u2194-\u2199\u2139\u23E9-\u23F3]/g, '')
+    .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
 
 interface Notification {
   id: string
@@ -250,41 +266,12 @@ export default function Notifications() {
     return matchesSearch && matchesType && matchesCategory && matchesStatus && matchesPriority
   })
 
-  const typeOptions = [
-    { value: 'INFO', label: 'Informação', color: 'blue', icon: <InfoCircleOutlined /> },
-    { value: 'WARNING', label: 'Aviso', color: 'orange', icon: <WarningOutlined /> },
-    { value: 'ERROR', label: 'Erro', color: 'red', icon: <CloseCircleOutlined /> },
-    { value: 'SUCCESS', label: 'Sucesso', color: 'green', icon: <CheckCircleOutlined /> }
-  ]
-
-  const categoryOptions = [
-    { value: 'SYSTEM', label: 'Sistema', color: 'gray', icon: <SettingOutlined /> },
-    { value: 'APPOINTMENT', label: 'Agendamento', color: 'blue', icon: <CalendarOutlined /> },
-    { value: 'SALE', label: 'Venda', color: 'green', icon: <ShoppingOutlined /> },
-    { value: 'STOCK', label: 'Estoque', color: 'orange', icon: <MedicineBoxOutlined /> },
-    { value: 'CUSTOMER', label: 'Cliente', color: 'purple', icon: <UserOutlined /> },
-    { value: 'MEDICAL', label: 'Médico', color: 'cyan', icon: <HeartOutlined /> },
-    { value: 'COMMUNICATION', label: 'Comunicação', color: 'magenta', icon: <MailOutlined /> }
-  ]
-
-  const priorityOptions = [
-    { value: 'LOW', label: 'Baixa', color: 'gray' },
-    { value: 'MEDIUM', label: 'Média', color: 'blue' },
-    { value: 'HIGH', label: 'Alta', color: 'orange' },
-    { value: 'URGENT', label: 'Urgente', color: 'red' }
-  ]
-
-  const getTypeConfig = (type: string) => {
-    return typeOptions.find(opt => opt.value === type) || typeOptions[0]
-  }
-
-  const getCategoryConfig = (category: string) => {
-    return categoryOptions.find(opt => opt.value === category) || categoryOptions[0]
-  }
-
-  const getPriorityConfig = (priority: string) => {
-    return priorityOptions.find(opt => opt.value === priority) || priorityOptions[0]
-  }
+  const typeOptions = NOTIFICATION_TYPE_OPTIONS
+  const categoryOptions = NOTIFICATION_CATEGORY_OPTIONS
+  const priorityOptions = NOTIFICATION_PRIORITY_OPTIONS
+  const getTypeConfig = (type: string) => getTagOption(NOTIFICATION_TYPE_OPTIONS, type)
+  const getCategoryConfig = (category: string) => getTagOption(NOTIFICATION_CATEGORY_OPTIONS, category)
+  const getPriorityConfig = (priority: string) => getTagOption(NOTIFICATION_PRIORITY_OPTIONS, priority)
 
   const columns = [
     {
@@ -295,9 +282,7 @@ export default function Notifications() {
         <div className="flex items-center space-x-2">
           <div className={`w-2 h-2 rounded-full ${record.isRead ? 'bg-gray-300' : 'bg-green-500'}`} />
           {getTypeConfig(type).icon}
-          <Tag color={getTypeConfig(type).color}>
-            {getTypeConfig(type).label}
-          </Tag>
+          <Tag color={getTypeConfig(type).color} className={TAG_CLASS}>{getTypeConfig(type).label}</Tag>
         </div>
       ),
     },
@@ -308,10 +293,10 @@ export default function Notifications() {
       render: (title: string, record: Notification) => (
         <div className="flex items-center space-x-2">
           <Text strong={!record.isRead} className={record.isRead ? 'text-gray-500' : 'text-gray-900'}>
-            {title}
+            {stripEmoji(title)}
           </Text>
           {!record.isRead && <Badge status="processing" />}
-      </div>
+        </div>
       ),
     },
     {
@@ -321,7 +306,7 @@ export default function Notifications() {
       render: (category: string) => {
         const config = getCategoryConfig(category)
         return (
-          <Tag color={config.color} icon={config.icon}>
+          <Tag color={config.color} icon={config.icon} className={TAG_CLASS}>
             {config.label}
           </Tag>
         )
@@ -334,7 +319,7 @@ export default function Notifications() {
       render: (priority: string) => {
         const config = getPriorityConfig(priority)
         return (
-          <Tag color={config.color}>
+          <Tag color={config.color} className={TAG_CLASS}>
             {config.label}
           </Tag>
         )
@@ -635,18 +620,18 @@ export default function Notifications() {
                         />
                         <div className="flex-1">
                           <div className="flex items-center space-x-2 mb-1">
-                            <Text strong className="text-gray-900">{notification.title}</Text>
-                            <Tag color={getTypeConfig(notification.type).color}>
+                            <Text strong className="text-gray-900">{stripEmoji(notification.title)}</Text>
+                            <Tag color={getTypeConfig(notification.type).color} className={TAG_CLASS}>
                               {getTypeConfig(notification.type).label}
                             </Tag>
-                            <Tag color={getCategoryConfig(notification.category).color}>
+                            <Tag color={getCategoryConfig(notification.category).color} className={TAG_CLASS}>
                               {getCategoryConfig(notification.category).label}
                             </Tag>
                           </div>
-                          <Text className="text-gray-600 mb-2 block">{notification.message}</Text>
+                          <Text className="text-gray-600 mb-2 block">{stripEmoji(notification.message)}</Text>
                           <div className="flex items-center space-x-4 text-xs text-gray-500">
                             <span>{dayjs(notification.createdAt).format('DD/MM/YYYY HH:mm')}</span>
-                            <Tag color={getPriorityConfig(notification.priority).color}>
+                            <Tag color={getPriorityConfig(notification.priority).color} className={TAG_CLASS}>
                               {getPriorityConfig(notification.priority).label}
                             </Tag>
                           </div>
@@ -909,16 +894,16 @@ export default function Notifications() {
                   className="bg-green-100 text-green-600 mb-4"
                 />
                 <Title level={3} className="text-gray-900">
-                  {selectedNotification.title}
+                  {stripEmoji(selectedNotification.title)}
                 </Title>
-                <div className="flex justify-center space-x-2 mb-4">
-                  <Tag color={getTypeConfig(selectedNotification.type).color}>
+                <div className="flex justify-center flex-wrap gap-2 mb-4">
+                  <Tag color={getTypeConfig(selectedNotification.type).color} className={TAG_CLASS}>
                     {getTypeConfig(selectedNotification.type).label}
                   </Tag>
-                  <Tag color={getCategoryConfig(selectedNotification.category).color}>
+                  <Tag color={getCategoryConfig(selectedNotification.category).color} className={TAG_CLASS}>
                     {getCategoryConfig(selectedNotification.category).label}
                   </Tag>
-                  <Tag color={getPriorityConfig(selectedNotification.priority).color}>
+                  <Tag color={getPriorityConfig(selectedNotification.priority).color} className={TAG_CLASS}>
                     {getPriorityConfig(selectedNotification.priority).label}
                   </Tag>
                 </div>
@@ -928,7 +913,7 @@ export default function Notifications() {
 
               <div>
                 <Title level={5} className="text-gray-900 mb-2">Mensagem</Title>
-                <Text className="text-gray-600">{selectedNotification.message}</Text>
+                <Text className="text-gray-600">{stripEmoji(selectedNotification.message)}</Text>
               </div>
 
               <div>
@@ -936,7 +921,7 @@ export default function Notifications() {
                 <div className="space-y-2">
                   <div className="flex justify-between">
                     <span className="text-gray-600">Status:</span>
-                    <Tag color={selectedNotification.isRead ? 'green' : 'orange'}>
+                    <Tag color={selectedNotification.isRead ? 'green' : 'orange'} className={TAG_CLASS}>
                       {selectedNotification.isRead ? 'Lida' : 'Não Lida'}
                     </Tag>
                   </div>

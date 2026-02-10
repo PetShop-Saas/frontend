@@ -44,6 +44,12 @@ import {
   AppstoreOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import {
+  getProductStatusConfig,
+  getProductMovementTypeConfig,
+  PRODUCT_STOCK_CONFIG,
+  TAG_CLASS
+} from '../constants/tagConfig'
 
 const { Search } = Input
 const { Option } = Select
@@ -529,32 +535,9 @@ export default function Products() {
     return true
   })
 
-  const getStatusConfig = (status: string) => {
-    const configs: Record<string, { color: string; icon: React.ReactNode; label: string }> = {
-      OK: { color: 'green', icon: <CheckCircleOutlined />, label: 'OK' },
-      LOW: { color: 'orange', icon: <WarningOutlined />, label: 'Baixo' },
-      OUT: { color: 'red', icon: <CloseCircleOutlined />, label: 'Zerado' },
-      active: { color: 'green', icon: <CheckCircleOutlined />, label: 'Ativo' },
-      inactive: { color: 'red', icon: <CloseCircleOutlined />, label: 'Inativo' }
-    }
-    return configs[status] || configs.OK
-  }
-
-  const getStockConfig = (stock: number) => {
-    if (stock === 0) return { color: 'red', icon: <CloseCircleOutlined />, label: 'Sem Estoque' }
-    if (stock <= 5) return { color: 'orange', icon: <ExclamationCircleOutlined />, label: 'Estoque Baixo' }
-    return { color: 'green', icon: <CheckCircleOutlined />, label: 'Em Estoque' }
-  }
-
-  const getMovementTypeConfig = (type: string) => {
-    const configs: Record<string, { color: string; label: string; icon: React.ReactNode }> = {
-      IN: { color: 'green', label: 'Entrada', icon: <CheckCircleOutlined /> },
-      OUT: { color: 'red', label: 'Saída', icon: <CloseCircleOutlined /> },
-      ADJUSTMENT: { color: 'blue', label: 'Ajuste', icon: <EditTwoTone /> },
-      TRANSFER: { color: 'orange', label: 'Transferência', icon: <SwapOutlined /> }
-    }
-    return configs[type] || { color: 'default', label: type, icon: null }
-  }
+  const getStatusConfig = getProductStatusConfig
+  const getStockConfig = PRODUCT_STOCK_CONFIG
+  const getMovementTypeConfig = getProductMovementTypeConfig
 
   // ==================== COLUNAS DAS TABELAS ====================
 
@@ -601,7 +584,7 @@ export default function Products() {
         return (
           <div className="flex items-center space-x-2">
             <span className="font-medium">{stock ?? 0}</span>
-            <Tag color={config.color} icon={config.icon}>
+            <Tag color={config.color} icon={config.icon} className={TAG_CLASS}>
               {config.label}
             </Tag>
           </div>
@@ -615,7 +598,7 @@ export default function Products() {
       render: (isActive: boolean) => {
         const config = getStatusConfig(isActive ? 'active' : 'inactive')
         return (
-          <Tag color={config.color} icon={config.icon}>
+          <Tag color={config.color} icon={config.icon} className={TAG_CLASS}>
             {config.label}
           </Tag>
         )
@@ -706,7 +689,7 @@ export default function Products() {
       render: (status: string) => {
         const config = getStatusConfig(status)
         return (
-          <Tag color={config.color} icon={config.icon}>
+          <Tag color={config.color} icon={config.icon} className={TAG_CLASS}>
             {config.label}
           </Tag>
         )
@@ -760,7 +743,7 @@ export default function Products() {
       render: (type: string) => {
         const config = getMovementTypeConfig(type)
         return (
-          <Tag color={config.color} icon={config.icon}>
+          <Tag color={config.color} icon={config.icon} className={TAG_CLASS}>
             {config.label}
           </Tag>
         )
@@ -1080,7 +1063,7 @@ export default function Products() {
                 <Card size="small">
                   <div className="flex items-center justify-between">
                     <span>{getMovementTypeConfig(t).label}</span>
-                    <Tag color={getMovementTypeConfig(t).color}>{count}</Tag>
+                    <Tag color={getMovementTypeConfig(t).color} className={TAG_CLASS}>{count}</Tag>
                   </div>
                 </Card>
               </Col>
@@ -1765,7 +1748,7 @@ export default function Products() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Status:</span>
-                          <Tag color={selectedProduct.isActive ? 'green' : 'red'}>
+                          <Tag color={selectedProduct.isActive ? 'green' : 'red'} className={TAG_CLASS}>
                             {selectedProduct.isActive ? 'Ativo' : 'Inativo'}
                           </Tag>
                         </div>

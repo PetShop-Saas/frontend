@@ -37,6 +37,7 @@ import {
   ScissorOutlined
 } from '@ant-design/icons'
 import dayjs from 'dayjs'
+import { MEDICAL_RECORD_TYPE_OPTIONS, getTagOption, TAG_CLASS } from '../constants/tagConfig'
 
 const { Search } = Input
 const { Option } = Select
@@ -194,17 +195,8 @@ export default function MedicalRecords() {
     return matchesSearch && matchesType && matchesPet
   })
 
-  const typeOptions = [
-    { value: 'VACCINE', label: 'Vacina', color: 'blue', icon: <MedicineBoxOutlined /> },
-    { value: 'MEDICATION', label: 'Medicação', color: 'green', icon: <HeartOutlined /> },
-    { value: 'EXAM', label: 'Exame', color: 'orange', icon: <ExperimentOutlined /> },
-    { value: 'TREATMENT', label: 'Tratamento', color: 'purple', icon: <ToolOutlined /> },
-    { value: 'SURGERY', label: 'Cirurgia', color: 'red', icon: <ScissorOutlined /> }
-  ]
-
-  const getTypeConfig = (type: string) => {
-    return typeOptions.find(opt => opt.value === type) || typeOptions[0]
-  }
+  const typeOptions = MEDICAL_RECORD_TYPE_OPTIONS
+  const getTypeConfig = (type: string) => getTagOption(MEDICAL_RECORD_TYPE_OPTIONS, type)
 
   const columns = [
     {
@@ -233,7 +225,7 @@ export default function MedicalRecords() {
       render: (type: string) => {
         const config = getTypeConfig(type)
         return (
-          <Tag color={config.color} icon={config.icon}>
+          <Tag color={config.color} icon={config.icon} className={TAG_CLASS}>
             {config.label}
           </Tag>
         )
@@ -666,7 +658,7 @@ export default function MedicalRecords() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">Tipo:</span>
-                          <Tag color={getTypeConfig(selectedRecord.type).color}>
+                          <Tag color={getTypeConfig(selectedRecord.type).color} className={TAG_CLASS}>
                             {getTypeConfig(selectedRecord.type).label}
                           </Tag>
                         </div>

@@ -5,6 +5,7 @@ import type { ColumnsType } from 'antd/es/table'
 import { apiService } from '../services/api'
 import { PlusOutlined, UserOutlined, MailOutlined, PhoneOutlined, IdcardOutlined, EnvironmentOutlined, SearchOutlined, EditOutlined, CameraOutlined, DollarOutlined, EyeOutlined } from '@ant-design/icons'
 import type { RcFile, UploadFile, UploadProps } from 'antd/es/upload/interface'
+import { formatCPFCNPJ, formatPhone, formatCEP } from '../utils/formatting'
 
 const { Option } = Select
 const { TextArea } = Input
@@ -78,49 +79,56 @@ export default function Customers() {
 
   const handleSubmit = async (values: any) => {
     try {
-      // Validar nome
-      if (!values.name || !values.name.trim() || values.name.trim().length < 2) {
+      // Obter todos os valores do formulário (incluindo campos de outros passos)
+      const allValues = form.getFieldsValue()
+      const customerName = allValues.name || values.name
+      
+      // Validar nome do cliente
+      if (!customerName || !customerName.trim() || customerName.trim().length < 2) {
         message.error('Nome deve ter pelo menos 2 caracteres')
         return
       }
 
       // Preparar endereço completo
       const addressParts = []
-      if (values.addressStreet) addressParts.push(values.addressStreet)
-      if (values.addressNumber) addressParts.push(`nº ${values.addressNumber}`)
-      if (values.addressComplement) addressParts.push(values.addressComplement)
-      if (values.addressNeighborhood) addressParts.push(values.addressNeighborhood)
-      if (values.addressCity) addressParts.push(values.addressCity)
-      if (values.addressState) addressParts.push(values.addressState)
-      if (values.addressZipCode) addressParts.push(`CEP: ${values.addressZipCode}`)
+      if (allValues.addressStreet) addressParts.push(allValues.addressStreet)
+      if (allValues.addressNumber) addressParts.push(`nº ${allValues.addressNumber}`)
+      if (allValues.addressComplement) addressParts.push(allValues.addressComplement)
+      if (allValues.addressNeighborhood) addressParts.push(allValues.addressNeighborhood)
+      if (allValues.addressCity) addressParts.push(allValues.addressCity)
+      if (allValues.addressState) addressParts.push(allValues.addressState)
+      if (allValues.addressZipCode) addressParts.push(`CEP: ${allValues.addressZipCode}`)
       const fullAddress = addressParts.length > 0 ? addressParts.join(', ') : undefined
 
-      // Preparar dados do cliente - apenas enviar campos preenchidos
+      // Preparar dados do cliente - usar todos os valores do formulário
       const customerData: any = {
-        name: values.name.trim(),
+        name: customerName.trim(),
       }
 
-      if (values.email?.trim()) customerData.email = values.email.trim()
-      if (values.phone?.trim()) customerData.phone = values.phone.trim()
+      if (allValues.email?.trim()) customerData.email = allValues.email.trim()
+      if (allValues.phone?.trim()) customerData.phone = allValues.phone.trim()
       if (fullAddress) customerData.address = fullAddress
-      if (values.document?.trim()) customerData.document = values.document.trim()
-      if (values.birthDate) customerData.birthDate = values.birthDate.format('YYYY-MM-DD')
-      if (values.gender) customerData.gender = values.gender
-      if (values.notes?.trim()) customerData.notes = values.notes.trim()
+      // Remover máscara do documento antes de enviar (apenas números)
+      if (allValues.document?.trim()) {
+        customerData.document = allValues.document.replace(/\D/g, '')
+      }
+      if (allValues.birthDate) customerData.birthDate = allValues.birthDate.format('YYYY-MM-DD')
+      if (allValues.gender) customerData.gender = allValues.gender
+      if (allValues.notes?.trim()) customerData.notes = allValues.notes.trim()
 
       // Criar cliente
       const newCustomer = await apiService.createCustomer(customerData) as any
 
       // Se tiver pet, criar o pet vinculado
-      if (hasPet && values.petName) {
+      if (hasPet && allValues.petName) {
         const petData = {
-          name: values.petName,
-          species: values.petSpecies,
-          breed: values.petBreed,
-          age: values.petAge,
-          weight: values.petWeight,
-          color: values.petColor,
-          notes: values.petNotes,
+          name: allValues.petName,
+          species: allValues.petSpecies,
+          breed: allValues.petBreed,
+          age: allValues.petAge,
+          weight: allValues.petWeight,
+          color: allValues.petColor,
+          notes: allValues.petNotes,
           customerId: newCustomer.id,
         }
 
@@ -245,7 +253,8 @@ export default function Customers() {
   }
 
   const handleCepSearch = async (e: any) => {
-    const cep = e.target.value.replace(/\D/g, '')
+    const cepValue = e.target.value || form.getFieldValue('addressZipCode') || ''
+    const cep = cepValue.replace(/\D/g, '')
     
     if (cep.length === 8) {
       setLoadingCep(true)
@@ -269,6 +278,8 @@ export default function Customers() {
       } finally {
         setLoadingCep(false)
       }
+    } else if (cep.length > 0) {
+      message.warning('CEP deve ter 8 dígitos')
     }
   }
 
@@ -481,13 +492,29 @@ export default function Customers() {
               label="CPF/CNPJ"
               rules={[
                 { required: true, message: 'Por favor, insira o documento' },
-                { min: 11, message: 'CPF deve ter 11 dígitos' }
+                { 
+                  validator: (_, value) => {
+                    if (!value) return Promise.resolve()
+                    const raw = value.replace(/\D/g, '')
+                    if (raw.length === 11 || raw.length === 14) {
+                      return Promise.resolve()
+                    }
+                    return Promise.reject(new Error('CPF deve ter 11 dígitos ou CNPJ deve ter 14 dígitos'))
+                  }
+                }
               ]}
             >
               <Input 
-                placeholder="000.000.000-00"
+                placeholder="000.000.000-00 ou 00.000.000/0000-00"
                 prefix={<IdcardOutlined />}
                 size="large"
+                maxLength={18}
+                onChange={(e) => {
+                  const formatted = formatCPFCNPJ(e.target.value)
+                  if (formatted !== e.target.value) {
+                    form.setFieldsValue({ document: formatted })
+                  }
+                }}
               />
             </Form.Item>
 
@@ -533,12 +560,31 @@ export default function Customers() {
             <Form.Item
               name="phone"
               label="Telefone"
-              rules={[{ required: true, message: 'Por favor, insira o telefone' }]}
+              rules={[
+                { required: true, message: 'Por favor, insira o telefone' },
+                {
+                  validator: (_, value) => {
+                    if (!value) return Promise.resolve()
+                    const raw = value.replace(/\D/g, '')
+                    if (raw.length === 10 || raw.length === 11) {
+                      return Promise.resolve()
+                    }
+                    return Promise.reject(new Error('Telefone deve ter 10 ou 11 dígitos'))
+                  }
+                }
+              ]}
             >
               <Input 
                 placeholder="(00) 00000-0000"
                 prefix={<PhoneOutlined />}
                 size="large"
+                maxLength={15}
+                onChange={(e) => {
+                  const formatted = formatPhone(e.target.value)
+                  if (formatted !== e.target.value) {
+                    form.setFieldsValue({ phone: formatted })
+                  }
+                }}
               />
             </Form.Item>
           </div>
@@ -552,7 +598,22 @@ export default function Customers() {
                 <Form.Item
                   name="addressZipCode"
                   label="CEP"
-                  rules={[{ pattern: /^\d{5}-?\d{3}$/, message: 'CEP inválido' }]}
+                  rules={[
+                    { 
+                      pattern: /^\d{5}-?\d{3}$/, 
+                      message: 'CEP inválido' 
+                    },
+                    {
+                      validator: (_, value) => {
+                        if (!value) return Promise.resolve()
+                        const raw = value.replace(/\D/g, '')
+                        if (raw.length === 8) {
+                          return Promise.resolve()
+                        }
+                        return Promise.reject(new Error('CEP deve ter 8 dígitos'))
+                      }
+                    }
+                  ]}
                 >
                   <Input
                     placeholder="00000-000"
@@ -561,6 +622,12 @@ export default function Customers() {
                     size="large"
                     disabled={loadingCep}
                     maxLength={9}
+                    onChange={(e) => {
+                      const formatted = formatCEP(e.target.value)
+                      if (formatted !== e.target.value) {
+                        form.setFieldsValue({ addressZipCode: formatted })
+                      }
+                    }}
                   />
                 </Form.Item>
               </Col>

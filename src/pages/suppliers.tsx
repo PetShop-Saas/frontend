@@ -32,6 +32,7 @@ import {
   MailOutlined,
   EnvironmentOutlined
 } from '@ant-design/icons'
+import { ACTIVE_INACTIVE_OPTIONS, getTagOption, TAG_CLASS } from '../constants/tagConfig'
 
 const { Search } = Input
 
@@ -171,14 +172,8 @@ export default function Suppliers() {
     return matchesSearch && matchesStatus
   })
 
-  const statusOptions = [
-    { value: 'active', label: 'Ativos', color: 'green', icon: <CheckCircleOutlined /> },
-    { value: 'inactive', label: 'Inativos', color: 'red', icon: <CloseCircleOutlined /> }
-  ]
-
-  const getStatusConfig = (status: boolean) => {
-    return status ? statusOptions[0] : statusOptions[1]
-  }
+  const statusOptions = ACTIVE_INACTIVE_OPTIONS
+  const getStatusConfig = (isActive: boolean) => getTagOption(ACTIVE_INACTIVE_OPTIONS, isActive ? 'active' : 'inactive')
 
   const columns = [
     {
@@ -243,7 +238,7 @@ export default function Suppliers() {
       render: (isActive: boolean) => {
         const config = getStatusConfig(isActive)
         return (
-          <Tag color={config.color} icon={config.icon}>
+          <Tag color={config.color} icon={config.icon} className={TAG_CLASS}>
             {config.label}
           </Tag>
         )
@@ -638,7 +633,7 @@ export default function Suppliers() {
                         )}
                         <div className="flex justify-between">
                           <span className="text-gray-600">Status:</span>
-                          <Tag color={selectedSupplier.isActive ? 'green' : 'red'}>
+                          <Tag color={selectedSupplier.isActive ? 'green' : 'red'} className={TAG_CLASS}>
                             {selectedSupplier.isActive ? 'Ativo' : 'Inativo'}
                           </Tag>
                         </div>

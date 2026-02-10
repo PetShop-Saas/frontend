@@ -29,7 +29,7 @@ export default function StatsCard({
   icon 
 }: StatsCardProps) {
   return (
-    <Card loading={loading} bordered={false} className="shadow-sm hover:shadow-md transition-shadow">
+    <Card loading={loading} variant="borderless" className="shadow-sm hover:shadow-md transition-shadow">
       {icon && (
         <div className="mb-2 text-2xl" style={{ color: theme.colors.primary }}>
           {icon}

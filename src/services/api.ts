@@ -1,3 +1,5 @@
+import type { AuthResponse, ApiUser, UserPermissionsResponse } from '@/types/api'
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
 class ApiService {
@@ -91,8 +93,8 @@ class ApiService {
   }
 
   // Auth endpoints
-  async login(email: string, password: string) {
-    return this.request('/auth/login', {
+  async login(email: string, password: string): Promise<AuthResponse> {
+    return this.request<AuthResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ email, password })
     })
@@ -292,9 +294,9 @@ class ApiService {
     })
   }
 
-  // Auth endpoints
-  async getCurrentUser() {
-    return this.request('/auth/me')
+  // Auth / usuário atual
+  async getCurrentUser(): Promise<ApiUser> {
+    return this.request<ApiUser>('/auth/me')
   }
 
   async getAllPermissions() {
@@ -778,12 +780,11 @@ class ApiService {
     return this.request(`/roles/permissions/${userRole}`)
   }
 
-  async getUserPermissions(userId: string) {
-    // Se userId não for fornecido, usar endpoint do usuário atual
+  async getUserPermissions(userId: string): Promise<UserPermissionsResponse> {
     if (!userId) {
-      return this.request('/permissions/user')
+      return this.request<UserPermissionsResponse>('/permissions/user')
     }
-    return this.request(`/permissions/user/${userId}`)
+    return this.request<UserPermissionsResponse>(`/permissions/user/${userId}`)
   }
 
   async createDefaultRoles() {

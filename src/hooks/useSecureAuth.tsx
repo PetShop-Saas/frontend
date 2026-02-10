@@ -1,18 +1,6 @@
 import { useState, useEffect } from 'react'
 import { apiService } from '../services/api'
-
-interface User {
-  id: string
-  name: string
-  email: string
-  role: string
-  tenantId: string
-  tenant?: {
-    id: string
-    name: string
-    subdomain: string
-  }
-}
+import type { ApiUser, UserPermissionsResponse } from '@/types/api'
 
 interface UserPermissions {
   permissions: string[]
@@ -20,7 +8,7 @@ interface UserPermissions {
 }
 
 export const useSecureAuth = () => {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<ApiUser | null>(null)
   const [permissions, setPermissions] = useState<UserPermissions | null>(null)
   const [loading, setLoading] = useState(true)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -39,13 +27,13 @@ export const useSecureAuth = () => {
       }
 
       // Buscar dados do usuário do backend (não do localStorage)
-      const userData = await apiService.getCurrentUser() as any
-      const userPermissions = await apiService.getUserPermissions(userData.id) as string[]
+      const userData = await apiService.getCurrentUser()
+      const permResponse = await apiService.getUserPermissions(userData.id)
 
       setUser(userData)
       setPermissions({
-        permissions: userPermissions,
-        sidebarItems: [] // TODO: Implementar sidebar items se necessário
+        permissions: permResponse.permissions ?? [],
+        sidebarItems: permResponse.sidebarItems ?? []
       })
       setIsAuthenticated(true)
     } catch (error) {

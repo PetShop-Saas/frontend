@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { useState, useEffect } from 'react'
 import { apiService } from '../services/api'
+import { logger } from '../utils/logger'
 import { 
   UserOutlined, 
   HeartOutlined,
@@ -36,7 +37,7 @@ export default function Home() {
         setPlanPricings(prices)
         setPromotions(activePromotions)
       } catch (error) {
-        console.error('Erro ao carregar dados:', error)
+        logger.error('Erro ao carregar dados:', error)
         // Usar preços padrão em caso de erro (sincronizados com o seed)
         setPlanPricings([
           { plan: 'BASIC', price: 59.9 },

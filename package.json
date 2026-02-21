@@ -13,6 +13,7 @@
     "test:watch": "jest --watch",
     "test:ci": "jest --ci --passWithNoTests",
     "test:coverage": "jest --coverage --passWithNoTests --ci",
+    "test:e2e": "playwright test",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },
@@ -38,6 +39,7 @@
     "tailwind-merge": "^2.2.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@storybook/addon-essentials": "^7.6.7",
     "@storybook/addon-interactions": "^7.6.7",
     "@storybook/addon-links": "^7.6.7",

@@ -8,6 +8,9 @@
 # Local data
 uploads/
 coverage/
+test-results/
+playwright-report/
+playwright/.cache/
 .next/
 node_modules/
 dist/

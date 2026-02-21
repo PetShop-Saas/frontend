@@ -3,7 +3,7 @@ import type { AuthResponse, ApiUser, UserPermissionsResponse } from '@/types/api
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
 class ApiService {
-  private getAuthHeaders() {
+  private getAuthHeaders(): Record<string, string> {
     const token = localStorage.getItem('token')
     return {
       'Content-Type': 'application/json',
@@ -11,40 +11,45 @@ class ApiService {
     }
   }
 
+  private handleAuthError(status: number): void {
+    if (status === 401) {
+      localStorage.removeItem('token')
+      localStorage.removeItem('user')
+      window.location.href = '/login'
+      throw new Error('Unauthorized')
+    }
+    if (status === 403) {
+      window.location.href = '/dashboard'
+      throw new Error('Forbidden')
+    }
+  }
+
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`
+    const headers: Record<string, string> = {
+      ...this.getAuthHeaders(),
+      ...(options.headers as Record<string, string>)
+    }
+    if (options.body instanceof FormData) {
+      delete headers['Content-Type']
+    }
     const response = await fetch(url, {
       ...options,
-      headers: {
-        ...this.getAuthHeaders(),
-        ...options.headers
-      }
+      headers
     })
 
     if (!response.ok) {
-      if (response.status === 401) {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        window.location.href = '/login'
-        throw new Error('Unauthorized')
-      }
-      if (response.status === 403) {
-        // Redirecionar para dashboard quando não tiver permissão
-        window.location.href = '/dashboard'
-        throw new Error('Forbidden')
-      }
-      // Tentar extrair mensagem amigável do backend
+      this.handleAuthError(response.status)
       const contentType = response.headers.get('content-type') || ''
       if (contentType.includes('application/json')) {
         try {
           const data = await response.json()
           const msg = Array.isArray(data?.message) ? data.message[0] : (data?.message || data?.error || '')
           if (msg) throw new Error(msg)
-        } catch (_) {
+        } catch {
           // ignore parse errors
         }
       }
-      // Fallbacks por status
       if (response.status === 409) {
         throw new Error('Este e-mail ou subdomínio já está em uso. Tente outro.')
       }
@@ -57,7 +62,6 @@ class ApiService {
     return response.json()
   }
 
-  // Método para requisições que esperam uma resposta de texto puro
   private async requestText(endpoint: string, options: RequestInit = {}): Promise<string | null> {
     const url = `${API_BASE_URL}${endpoint}`
     const response = await fetch(url, {
@@ -69,17 +73,7 @@ class ApiService {
     })
 
     if (!response.ok) {
-      if (response.status === 401) {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        window.location.href = '/login'
-        throw new Error('Unauthorized')
-      }
-      if (response.status === 403) {
-        // Redirecionar para dashboard quando não tiver permissão
-        window.location.href = '/dashboard'
-        throw new Error('Forbidden')
-      }
+      this.handleAuthError(response.status)
       throw new Error(`HTTP error! status: ${response.status}`)
     }
 
@@ -344,13 +338,12 @@ class ApiService {
     })
   }
 
-  // Admin endpoints
   async getUsers() {
     return this.request('/users')
   }
 
-  async getAllUsers() {
-    return this.request('/users')
+  getAllUsers() {
+    return this.getUsers()
   }
 
   async getUserById(id: string) {
@@ -388,24 +381,13 @@ class ApiService {
     })
 
     if (!response.ok) {
-      if (response.status === 401) {
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        window.location.href = '/login'
-        throw new Error('Unauthorized')
-      }
-      if (response.status === 403) {
-        // Redirecionar para dashboard quando não tiver permissão
-        window.location.href = '/dashboard'
-        throw new Error('Forbidden')
-      }
+      this.handleAuthError(response.status)
       throw new Error(`HTTP error! status: ${response.status}`)
     }
 
     return response.json()
   }
 
-  // Medical Records endpoints
   async getMedicalRecords() {
     return this.request('/medical-records')
   }
@@ -587,7 +569,6 @@ class ApiService {
     })
   }
 
-  // Inventory endpoints (novo sistema de estoque)
   async getInventory(params?: {
     onlyLowStock?: boolean;
     onlyOutOfStock?: boolean;
@@ -690,7 +671,6 @@ class ApiService {
     })
   }
 
-  // Admin endpoints
   async getAdminDashboard() {
     return this.request('/admin/dashboard')
   }
@@ -940,7 +920,6 @@ class ApiService {
     return this.request(`/pricing/calculate?${params.toString()}`)
   }
 
-  // Public endpoint (no auth required)
   async getPublicPlanPricings() {
     const url = `${API_BASE_URL}/pricing/public/plans`
     const response = await fetch(url, {
@@ -1027,7 +1006,6 @@ class ApiService {
     })
   }
 
-  // Admin Billing endpoints
   async getAdminBillingOverview() {
     return this.request('/admin/billing/overview')
   }
@@ -1309,7 +1287,6 @@ class ApiService {
     })
   }
 
-  // Criar cobrança pública (sem autenticação - para registro)
   async createBillingPublic(amount: number, description: string, customerEmail: string, customerName: string, plan?: string, customerPhone?: string) {
     const response = await fetch(`${API_BASE_URL}/payments/create-billing-public`, {
       method: 'POST',
@@ -1328,7 +1305,6 @@ class ApiService {
   }
 
   async checkBillingStatus(billingId: string) {
-    // Endpoint público, não precisa de autenticação
     const response = await fetch(`${API_BASE_URL}/payments/billing/${billingId}/status`, {
       method: 'GET',
       headers: {
@@ -1345,7 +1321,6 @@ class ApiService {
   }
 
   async createPixQRCode(amount: number, description?: string, customerEmail?: string, customerName?: string) {
-    // Se tiver customerEmail e customerName, usar endpoint público (para registro)
     if (customerEmail && customerName) {
       const response = await fetch(`${API_BASE_URL}/payments/pix/qrcode-public`, {
         method: 'POST',
@@ -1362,8 +1337,6 @@ class ApiService {
 
       return response.json()
     }
-
-    // Caso contrário, usar endpoint autenticado
     return this.request('/payments/pix/qrcode', {
       method: 'POST',
       body: JSON.stringify({ amount, description })
@@ -1371,7 +1344,6 @@ class ApiService {
   }
 
   async checkPixStatus(qrcodeId: string) {
-    // Endpoint público, não precisa de autenticação
     const response = await fetch(`${API_BASE_URL}/payments/pix/${qrcodeId}/status`, {
       method: 'GET',
       headers: {
@@ -1387,7 +1359,6 @@ class ApiService {
     return response.json()
   }
 
-  // Simular pagamento PIX (apenas em modo dev/teste)
   async simulatePixPayment(qrcodeId: string) {
     const response = await fetch(`${API_BASE_URL}/payments/pix/${qrcodeId}/simulate`, {
       method: 'POST',
@@ -1414,10 +1385,7 @@ class ApiService {
     
     return this.request('/images/upload', {
       method: 'POST',
-      body: formData,
-      headers: {
-        // Remove Content-Type header to let browser set it with boundary
-      }
+      body: formData
     })
   }
 

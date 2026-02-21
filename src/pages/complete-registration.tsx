@@ -33,7 +33,6 @@ const { Option } = Select
 const { Title, Text } = Typography
 const { Step } = Steps
 
-// Planos disponíveis
 const AVAILABLE_PLANS = {
   FREE_USER: {
     name: 'FREE_USER',
@@ -89,8 +88,7 @@ export default function CompleteRegistration() {
   const router = useRouter()
   const [passwordStrength, setPasswordStrength] = useState<'weak'|'medium'|'strong'|null>(null)
   const [termsOpen, setTermsOpen] = useState(false)
-  
-  // Estados para pagamento
+
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'link' | 'card' | 'boleto' | null>(null)
   const [billingData, setBillingData] = useState<any>(null)
   const [pixData, setPixData] = useState<any>(null)

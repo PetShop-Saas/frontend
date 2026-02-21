@@ -4,7 +4,6 @@ import Image from 'next/image'
 import { Layout as AntLayout, Menu, Avatar, Dropdown, Button, Badge, Space, Typography } from 'antd'
 import { usePageTransition } from '../../hooks/usePageTransition'
 import { usePermissions } from '../../hooks/usePermissions'
-// Removido useSecureAuth - usando localStorage diretamente
 import { 
   DashboardOutlined, 
   UserOutlined, 
@@ -66,7 +65,6 @@ export default function Layout({ children }: LayoutProps) {
   const { isLoading, isTransitioning } = usePageTransition()
   const { canAccessSidebarItem } = usePermissions()
 
-  // Carregar dados do usuário do localStorage
   useEffect(() => {
     const token = localStorage.getItem('token')
     if (!token) {
@@ -74,7 +72,6 @@ export default function Layout({ children }: LayoutProps) {
       return
     }
 
-    // Por enquanto, usar dados básicos do localStorage se existirem
     const userData = localStorage.getItem('user')
     if (userData) {
       try {
@@ -87,20 +84,16 @@ export default function Layout({ children }: LayoutProps) {
   }, []) // router intencionalmente omitido para evitar loops infinitos
 
   useEffect(() => {
-    // Carregar logo do tenant quando user estiver disponível
     if (user?.tenant) {
-      // Por enquanto, usar um logo padrão ou buscar do backend
       setTenantLogo('')
     }
     
-    // Escutar evento customizado de logo atualizada
     const handleLogoUpdate = (event: CustomEvent) => {
       setTenantLogo(event.detail)
     }
 
     window.addEventListener('logoUpdated', handleLogoUpdate as EventListener)
 
-    // Cleanup
     return () => {
       window.removeEventListener('logoUpdated', handleLogoUpdate as EventListener)
     }

@@ -89,8 +89,8 @@ export default function Suppliers() {
   const handleCreate = async (values: any) => {
     try {
       await apiService.createSupplier(values)
-      message.success('Fornecedor criado com sucesso!')
       handleModalClose()
+      message.success('Fornecedor criado com sucesso!')
       loadData()
     } catch (error) {
       message.error('Erro ao criar fornecedor')

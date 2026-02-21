@@ -228,20 +228,15 @@ export default function Customers() {
 
   const nextStep = async () => {
     try {
-      // Validar apenas os campos da etapa atual
       if (currentStep === 0) {
-        // Validação específica da primeira etapa
         const values = await form.validateFields(['name', 'document', 'gender', 'email', 'phone'])
-        
-        // Validação adicional do nome
         if (!values.name || values.name.trim().length < 2) {
           message.error('Nome deve ter pelo menos 2 caracteres')
           return
         }
-        
         setCurrentStep(1)
       } else {
-        setCurrentStep(1)
+        setCurrentStep(currentStep + 1)
       }
     } catch (error) {
       message.error('Por favor, preencha todos os campos obrigatórios')

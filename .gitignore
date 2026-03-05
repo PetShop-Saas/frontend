@@ -25,3 +25,6 @@ pnpm-debug.log*
 # IDE/editor
 .vscode/
 .idea/
+
+# Backend clonado para Cloud Agent (não versionar)
+backend/

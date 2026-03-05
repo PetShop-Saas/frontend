@@ -1,0 +1,13 @@
+{
+  "install": "npm ci && (test -d backend || git clone --depth 1 https://github.com/PetShop-Saas/backend.git backend) && cd backend && npm ci && npx prisma generate && cd ..",
+  "terminals": [
+    {
+      "name": "Backend API",
+      "command": "cd backend && (npx prisma migrate deploy 2>/dev/null || true) && npm run dev"
+    },
+    {
+      "name": "Frontend Next.js",
+      "command": "npm run dev"
+    }
+  ]
+}

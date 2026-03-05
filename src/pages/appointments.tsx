@@ -3,6 +3,8 @@ import { useRouter } from 'next/router'
 import { Modal, Form, Input, message, Select, Button, Table, Tag, Avatar, Space, Popconfirm, DatePicker, TimePicker, Card, Divider, Row, Col } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { apiService } from '../services/api'
+import { AppointmentForm } from '../components/appointments/AppointmentForm'
+import { AppointmentFilters } from '../components/appointments/AppointmentFilters'
 import { 
   PlusOutlined, 
   CalendarOutlined, 

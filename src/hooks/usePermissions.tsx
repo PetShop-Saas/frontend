@@ -136,7 +136,7 @@ export const PermissionProvider = ({ children }: { children: React.ReactNode }) 
 
   const checkRouteAccess = (pathname: string): boolean => {
     // Rotas públicas sempre têm acesso
-    const publicRoutes = ['/dashboard', '/login', '/', '/complete-registration', '/register']
+    const publicRoutes = ['/dashboard', '/login', '/', '/complete-registration']
     if (publicRoutes.includes(pathname)) {
       return true
     }

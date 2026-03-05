@@ -1,69 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Mapeamento de rotas para permissões necessárias
-const ROUTE_PERMISSIONS: Record<string, string> = {
-  '/dashboard': 'dashboard.read',
-  '/customers': 'customers.read',
-  '/pets': 'pets.read',
-  '/appointments': 'appointments.read',
-  '/calendar': 'appointments.calendar',
-  '/services': 'services.read',
-  '/products': 'products.read',
-  '/sales': 'sales.read',
-  '/suppliers': 'suppliers.read',
-  '/purchases': 'purchases.read',
-  '/medical-records': 'medical-records.read',
-  '/hotel': 'hotel.read',
-  '/cash-flow': 'cash-flow.read',
-  '/financial-reports': 'financial-reports.read',
-  '/billing': 'billing.read',
-  '/communications': 'communications.read',
-  '/notifications': 'notifications.read',
-  '/tickets': 'tickets.read',
-  '/operations': 'operations.read',
-  '/admin-dashboard': 'admin.dashboard',
-  '/admin-billing': 'admin.billing',
-  '/unified-access-management': 'users.read',
-  '/personalization': 'admin.personalization',
-  '/audit-logs': 'audit.read',
-  '/backup': 'backup.read',
-  // Removido '/settings' para evitar redirecionamento
-  // Removido '/stock-movements' - consolidado em /products
+const PUBLIC_ROUTES = ['/', '/login', '/register', '/complete-registration']
+const PUBLIC_PATHS = ['/_next', '/favicon.ico', '/public', '/api/auth']
+
+function isPublicPath(pathname: string): boolean {
+  return PUBLIC_ROUTES.includes(pathname) || 
+    PUBLIC_PATHS.some(prefix => pathname.startsWith(prefix))
 }
 
-export function middleware(request: NextRequest) {
+function getTokenFromRequest(request: NextRequest): string | null {
+  const authHeader = request.headers.get('authorization')
+  if (authHeader?.startsWith('Bearer ')) {
+    return authHeader.substring(7)
+  }
+  
+  const cookieHeader = request.headers.get('cookie') || ''
+  const tokenMatch = cookieHeader.match(/token=([^;]+)/)
+  return tokenMatch ? tokenMatch[1] : null
+}
+
+function isValidJWT(token: string): boolean {
+  if (!token || token.split('.').length !== 3) {
+    return false
+  }
+  try {
+    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString())
+    return payload.exp ? payload.exp * 1000 > Date.now() : true
+  } catch {
+    return false
+  }
+}
+
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   
-  // Permitir acesso livre para landing page e login
-  if (pathname === '/' || pathname === '/login') {
+  if (isPublicPath(pathname)) {
     return NextResponse.next()
   }
   
-  // Verificar se a rota precisa de permissão
-  const requiredPermission = ROUTE_PERMISSIONS[pathname]
+  const token = getTokenFromRequest(request)
   
-  if (!requiredPermission) {
-    return NextResponse.next()
+  if (!token || !isValidJWT(token)) {
+    const loginUrl = new URL('/login', request.url)
+    loginUrl.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(loginUrl)
   }
-
-  // Verificar se o usuário está autenticado
-  // Como estamos usando localStorage no frontend, vamos permitir acesso
-  // e deixar o Layout fazer a verificação de autenticação
+  
   return NextResponse.next()
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - login (login page)
-     * - settings (settings page - sem middleware)
-     * - index (landing page)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico|login|settings|^$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }

@@ -1,0 +1,30 @@
+# Dispara Cloud Agent do Cursor quando uma issue é criada
+# Requer: criar automação em cursor.com/automations com Webhook trigger
+# e adicionar CURSOR_WEBHOOK_URL e CURSOR_API_KEY nos secrets do repo
+
+name: Trigger Cursor Agent on Issue
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  trigger-cursor:
+    name: Notify Cursor
+    runs-on: ubuntu-latest
+    if: github.repository == 'PetShop-Saas/frontend'
+    steps:
+      - name: Call Cursor Webhook
+        env:
+          WEBHOOK_URL: ${{ secrets.CURSOR_WEBHOOK_URL }}
+          API_KEY: ${{ secrets.CURSOR_API_KEY }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ] || [ -z "$API_KEY" ]; then
+            echo "CURSOR_WEBHOOK_URL e CURSOR_API_KEY não configurados. Pulando."
+            exit 0
+          fi
+          PAYLOAD="{\"issue_number\":${{ github.event.issue.number }},\"repo\":\"${{ github.repository }}\",\"issue_url\":\"${{ github.event.issue.html_url }}\"}"
+          curl -sSf -X POST "$WEBHOOK_URL" \
+            -H "Authorization: Bearer $API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD"

@@ -1,5 +1,61 @@
 import type { AuthResponse, ApiUser, UserPermissionsResponse } from '@/types/api'
 
+export interface Customer {
+  id: string
+  name: string
+  email?: string | null
+  phone?: string | null
+  address?: string | null
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface Pet {
+  id: string
+  name: string
+  species: string
+  breed?: string | null
+  customerId: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface Service {
+  id: string
+  name: string
+  price: number
+  duration: number
+  description?: string | null
+  isActive?: boolean
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface Product {
+  id: string
+  name: string
+  price: number
+  cost?: number | null
+  stock?: number | null
+  sku?: string | null
+  description?: string | null
+  isActive?: boolean
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface Appointment {
+  id: string
+  date: string
+  status: string
+  notes?: string | null
+  customerId: string
+  petId: string
+  serviceId: string
+  createdAt?: string
+  updatedAt?: string
+}
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
 class ApiService {
@@ -103,126 +159,126 @@ class ApiService {
 
 
   // Customers endpoints
-  async getCustomers() {
-    return this.request('/customers')
+  async getCustomers(): Promise<Customer[]> {
+    return this.request<Customer[]>('/customers')
   }
 
-  async createCustomer(data: any) {
-    return this.request('/customers', {
+  async createCustomer(data: Partial<Customer>): Promise<Customer> {
+    return this.request<Customer>('/customers', {
       method: 'POST',
       body: JSON.stringify(data)
     })
   }
 
-  async updateCustomer(id: string, data: any) {
-    return this.request(`/customers/${id}`, {
+  async updateCustomer(id: string, data: Partial<Customer>): Promise<Customer> {
+    return this.request<Customer>(`/customers/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data)
     })
   }
 
-  async deleteCustomer(id: string) {
-    return this.request(`/customers/${id}`, {
+  async deleteCustomer(id: string): Promise<void> {
+    return this.request<void>(`/customers/${id}`, {
       method: 'DELETE'
     })
   }
 
   // Pets endpoints
-  async getPets() {
-    return this.request('/pets')
+  async getPets(): Promise<Pet[]> {
+    return this.request<Pet[]>('/pets')
   }
 
-  async createPet(data: any) {
-    return this.request('/pets', {
+  async createPet(data: Partial<Pet>): Promise<Pet> {
+    return this.request<Pet>('/pets', {
       method: 'POST',
       body: JSON.stringify(data)
     })
   }
 
-  async updatePet(id: string, data: any) {
-    return this.request(`/pets/${id}`, {
+  async updatePet(id: string, data: Partial<Pet>): Promise<Pet> {
+    return this.request<Pet>(`/pets/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data)
     })
   }
 
-  async deletePet(id: string) {
-    return this.request(`/pets/${id}`, {
+  async deletePet(id: string): Promise<void> {
+    return this.request<void>(`/pets/${id}`, {
       method: 'DELETE'
     })
   }
 
   // Appointments endpoints
-  async getAppointments() {
-    return this.request('/appointments')
+  async getAppointments(): Promise<Appointment[]> {
+    return this.request<Appointment[]>('/appointments')
   }
 
-  async createAppointment(data: any) {
-    return this.request('/appointments', {
+  async createAppointment(data: Partial<Appointment>): Promise<Appointment> {
+    return this.request<Appointment>('/appointments', {
       method: 'POST',
       body: JSON.stringify(data)
     })
   }
 
-  async updateAppointment(id: string, data: any) {
-    return this.request(`/appointments/${id}`, {
+  async updateAppointment(id: string, data: Partial<Appointment>): Promise<Appointment> {
+    return this.request<Appointment>(`/appointments/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data)
     })
   }
 
-  async deleteAppointment(id: string) {
-    return this.request(`/appointments/${id}`, {
+  async deleteAppointment(id: string): Promise<void> {
+    return this.request<void>(`/appointments/${id}`, {
       method: 'DELETE'
     })
   }
 
   // Services endpoints
-  async getServices() {
-    return this.request('/services')
+  async getServices(): Promise<Service[]> {
+    return this.request<Service[]>('/services')
   }
 
-  async createService(data: any) {
-    return this.request('/services', {
+  async createService(data: Partial<Service>): Promise<Service> {
+    return this.request<Service>('/services', {
       method: 'POST',
       body: JSON.stringify(data)
     })
   }
 
-  async updateService(id: string, data: any) {
-    return this.request(`/services/${id}`, {
+  async updateService(id: string, data: Partial<Service>): Promise<Service> {
+    return this.request<Service>(`/services/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data)
     })
   }
 
-  async deleteService(id: string) {
-    return this.request(`/services/${id}`, {
+  async deleteService(id: string): Promise<void> {
+    return this.request<void>(`/services/${id}`, {
       method: 'DELETE'
     })
   }
 
   // Products endpoints
-  async getProducts() {
-    return this.request('/products')
+  async getProducts(): Promise<Product[]> {
+    return this.request<Product[]>('/products')
   }
 
-  async createProduct(data: any) {
-    return this.request('/products', {
+  async createProduct(data: Partial<Product>): Promise<Product> {
+    return this.request<Product>('/products', {
       method: 'POST',
       body: JSON.stringify(data)
     })
   }
 
-  async updateProduct(id: string, data: any) {
-    return this.request(`/products/${id}`, {
+  async updateProduct(id: string, data: Partial<Product>): Promise<Product> {
+    return this.request<Product>(`/products/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data)
     })
   }
 
-  async deleteProduct(id: string) {
-    return this.request(`/products/${id}`, {
+  async deleteProduct(id: string): Promise<void> {
+    return this.request<void>(`/products/${id}`, {
       method: 'DELETE'
     })
   }

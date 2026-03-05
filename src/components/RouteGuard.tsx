@@ -16,7 +16,7 @@ export const RouteGuard: React.FC<RouteGuardProps> = ({ children }) => {
     }
 
     // Rotas públicas que sempre devem ter acesso
-    const publicRoutes = ['/dashboard', '/login', '/', '/complete-registration', '/register']
+    const publicRoutes = ['/dashboard', '/login', '/', '/complete-registration']
     if (publicRoutes.includes(router.pathname)) {
       return
     }

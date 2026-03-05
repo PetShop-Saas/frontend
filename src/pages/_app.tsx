@@ -13,7 +13,7 @@ export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter()
   
   // Lista de páginas públicas que não devem usar o layout
-  const publicPages = ['/login', '/', '/complete-registration', '/register']
+  const publicPages = ['/login', '/', '/complete-registration']
   const isPublicPage = publicPages.includes(router.pathname)
 
   useEffect(() => {

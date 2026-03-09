@@ -395,6 +395,7 @@ export default function LayoutNew({ children }: LayoutProps) {
   const handleLogout = () => {
     localStorage.removeItem('token')
     localStorage.removeItem('user')
+    document.cookie = 'token=; path=/; max-age=0; samesite=strict'
     router.push('/login')
   }
 

@@ -29,12 +29,16 @@ export default function Login() {
       if (response.ok) {
         const data = await response.json()
         
-        // Armazenar token JWT e dados do usuário temporariamente
+        // Armazenar token JWT e dados do usuário
         localStorage.setItem('token', data.access_token)
         localStorage.setItem('user', JSON.stringify(data.user))
-        
+
+        // Salvar token em cookie para que o middleware de rotas protegidas possa validar
+        const maxAge = 7 * 24 * 60 * 60 // 7 dias em segundos
+        document.cookie = `token=${data.access_token}; path=/; max-age=${maxAge}; samesite=strict`
+
         message.success('Login realizado com sucesso!')
-        
+
         // Redirecionar para dashboard
         router.push('/dashboard')
       } else {

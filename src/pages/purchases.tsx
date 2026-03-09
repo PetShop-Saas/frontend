@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { apiService } from '../services/api'
+import { apiService, extractArrayFromResponse } from '../services/api'
 import {
   Card,
   Button,
@@ -110,14 +110,9 @@ export default function Purchases() {
         apiService.getProducts()
       ])
       
-      // Verificar se é um array direto ou objeto com propriedade
-      const purchasesArray = Array.isArray(purchasesData) ? purchasesData : (purchasesData as any)?.purchases || []
-      const suppliersArray = Array.isArray(suppliersData) ? suppliersData : (suppliersData as any)?.suppliers || []
-      const productsArray = Array.isArray(productsData) ? productsData : (productsData as any)?.products || []
-      
-      setPurchases(purchasesArray)
-      setSuppliers(suppliersArray)
-      setProducts(productsArray)
+      setPurchases(extractArrayFromResponse(purchasesData, ['data', 'purchases']))
+      setSuppliers(extractArrayFromResponse(suppliersData, ['data', 'suppliers']))
+      setProducts(extractArrayFromResponse(productsData, ['data', 'products']))
     } catch (error) {
       message.error('Erro ao carregar dados')
     } finally {

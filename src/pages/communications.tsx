@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { apiService } from '../services/api'
+import { apiService, extractArrayFromResponse } from '../services/api'
 import {
   Card,
   Button,
@@ -168,14 +168,9 @@ export default function Communications() {
         apiService.getAppointments()
       ])
       
-      // Verificar se é um array direto ou objeto com propriedade
-      const communicationsArray = Array.isArray(communicationsData) ? communicationsData : (communicationsData as any)?.communications || []
-      const customersArray = Array.isArray(customersData) ? customersData : (customersData as any)?.customers || []
-      const appointmentsArray = Array.isArray(appointmentsData) ? appointmentsData : (appointmentsData as any)?.appointments || []
-      
-      setCommunications(communicationsArray)
-      setCustomers(customersArray)
-      setAppointments(appointmentsArray)
+      setCommunications(extractArrayFromResponse(communicationsData, ['data', 'communications']))
+      setCustomers(extractArrayFromResponse(customersData, ['data', 'customers']))
+      setAppointments(extractArrayFromResponse(appointmentsData, ['data', 'appointments']))
       
       // Carregar estatísticas
       const startDate = dayjs().subtract(30, 'days').format('YYYY-MM-DD')

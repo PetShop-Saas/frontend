@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { Modal, Form, Input, message, DatePicker, Select, Button, Steps, InputNumber, Switch, Row, Col, Upload, Avatar, Table, Tag } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { apiService } from '../services/api'
+import { apiService, extractArrayFromResponse } from '../services/api'
 import { PlusOutlined, UserOutlined, MailOutlined, PhoneOutlined, IdcardOutlined, EnvironmentOutlined, SearchOutlined, EditOutlined, CameraOutlined, DollarOutlined, EyeOutlined } from '@ant-design/icons'
 import type { RcFile, UploadFile, UploadProps } from 'antd/es/upload/interface'
 import { formatCPFCNPJ, formatPhone, formatCEP } from '../utils/formatting'
@@ -64,12 +64,8 @@ export default function Customers() {
   const loadCustomers = async () => {
     try {
       setLoading(true)
-      const response = await apiService.getCustomers() as any
-      
-      // Estrutura padronizada: { data, total, page, limit }
-      const customersData = Array.isArray(response) ? response : (response?.data || [])
-      
-      setCustomers(customersData)
+      const response = await apiService.getCustomers()
+      setCustomers(extractArrayFromResponse(response, ['data', 'customers']))
     } catch (error) {
       message.error('Erro ao carregar clientes')
     } finally {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { apiService } from '../services/api'
+import { apiService, extractArrayFromResponse } from '../services/api'
 import {
   Card,
   Button,
@@ -74,9 +74,7 @@ export default function Services() {
       setLoading(true)
       const servicesData = await apiService.getServices()
       
-      // Estrutura padronizada: { data, total, page, limit }
-      const servicesArray = Array.isArray(servicesData) ? servicesData : (servicesData as any)?.data || []
-      setServices(servicesArray)
+      setServices(extractArrayFromResponse(servicesData, ['data', 'services']))
     } catch (error) {
       message.error('Erro ao carregar serviços')
     } finally {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { apiService } from '../services/api'
+import { apiService, extractArrayFromResponse } from '../services/api'
 import {
   Card,
   Button,
@@ -107,14 +107,9 @@ export default function Sales() {
         apiService.getCustomers()
       ])
       
-      // Estrutura padronizada: { data, total, page, limit }
-      const salesArray = Array.isArray(salesData) ? salesData : (salesData as any)?.data || []
-      const productsArray = Array.isArray(productsData) ? productsData : (productsData as any)?.data || []
-      const customersArray = Array.isArray(customersData) ? customersData : (customersData as any)?.data || []
-      
-      setSales(salesArray)
-      setProducts(productsArray)
-      setCustomers(customersArray)
+      setSales(extractArrayFromResponse(salesData, ['data', 'sales']))
+      setProducts(extractArrayFromResponse(productsData, ['data', 'products']))
+      setCustomers(extractArrayFromResponse(customersData, ['data', 'customers']))
     } catch (error) {
       message.error('Erro ao carregar dados')
     } finally {

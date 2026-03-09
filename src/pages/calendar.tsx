@@ -4,7 +4,7 @@ import { Calendar, momentLocalizer, Views } from 'react-big-calendar'
 import moment from 'moment'
 import { Modal, Form, Input, message, Select, Button, Tag, Avatar, Space, Popconfirm, DatePicker, TimePicker, Card, Divider, Row, Col } from 'antd'
 
-import { apiService } from '../services/api'
+import { apiService, extractArrayFromResponse } from '../services/api'
 import { 
   PlusOutlined, 
   CalendarOutlined, 
@@ -104,30 +104,25 @@ export default function CalendarPage() {
         apiService.getServices()
       ])
       
-      // Estrutura padronizada: { data, total, page, limit }
-      const processedAppointments = Array.isArray(appointmentsData) ? appointmentsData : (appointmentsData as any)?.data || []
+      const processedAppointments = extractArrayFromResponse<Record<string, unknown>>(appointmentsData, ['data', 'appointments'])
+      const processedCustomers = extractArrayFromResponse<Customer>(customersData, ['data', 'customers'])
+      const processedPets = extractArrayFromResponse<Pet>(petsData, ['data', 'pets'])
+      const processedServices = extractArrayFromResponse<Service>(servicesData, ['data', 'services'])
       
-      // Estrutura padronizada: { data, total, page, limit }
-      const processedCustomers = Array.isArray(customersData) ? customersData : (customersData as any)?.data || []
-      
-      // Estrutura padronizada: { data, total, page, limit }
-      const processedPets = Array.isArray(petsData) ? petsData : (petsData as any)?.data || []
-      
-      // Estrutura padronizada: { data, total, page, limit }
-      const processedServices = Array.isArray(servicesData) ? servicesData : (servicesData as any)?.data || []
-      
-      // Mapear agendamentos para incluir informações relacionadas
-      const appointmentsWithInfo = processedAppointments.map((appointment: any) => ({
-        ...appointment,
-        customerName: appointment.customer?.name || 'Cliente não encontrado',
-        customerEmail: appointment.customer?.email,
-        customerPhone: appointment.customer?.phone,
-        petName: appointment.pet?.name || 'Pet não encontrado',
-        petSpecies: appointment.pet?.species || '',
-        serviceName: appointment.service?.name || 'Serviço não encontrado',
-        servicePrice: appointment.service?.price || 0,
-        serviceDuration: appointment.service?.duration || 0,
-      }))
+      const appointmentsWithInfo = processedAppointments.map((appointment) => {
+        const a = appointment as { customer?: { name?: string; email?: string; phone?: string }; pet?: { name?: string; species?: string }; service?: { name?: string; price?: number; duration?: number } }
+        return {
+        ...(appointment as object),
+        customerName: a.customer?.name || 'Cliente não encontrado',
+        customerEmail: a.customer?.email,
+        customerPhone: a.customer?.phone,
+        petName: a.pet?.name || 'Pet não encontrado',
+        petSpecies: a.pet?.species || '',
+        serviceName: a.service?.name || 'Serviço não encontrado',
+        servicePrice: a.service?.price || 0,
+        serviceDuration: a.service?.duration || 0,
+      }
+      }) as Appointment[]
       
       setAppointments(appointmentsWithInfo)
       setCustomers(processedCustomers)

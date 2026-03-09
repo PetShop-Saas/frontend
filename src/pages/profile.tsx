@@ -77,7 +77,7 @@ export default function Profile() {
     
     loadContactInfo()
     setLoading(false)
-  }, [router])
+  }, [router]) // eslint-disable-line react-hooks/exhaustive-deps -- executa apenas no mount
 
   const parseAddressString = (addressStr: string) => {
     if (!addressStr) return {}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { apiService } from '../services/api'
+import { apiService, extractArrayFromResponse } from '../services/api'
 import {
   Card,
   Button,
@@ -75,10 +75,7 @@ export default function Suppliers() {
     try {
       setLoading(true)
       const suppliersData = await apiService.getSuppliers()
-      
-      // Verificar se é um array direto ou objeto com propriedade suppliers
-      const suppliersArray = Array.isArray(suppliersData) ? suppliersData : (suppliersData as any)?.suppliers || []
-      setSuppliers(suppliersArray)
+      setSuppliers(extractArrayFromResponse<Supplier>(suppliersData, ['data', 'suppliers']))
     } catch (error) {
       message.error('Erro ao carregar fornecedores')
     } finally {
@@ -89,9 +86,9 @@ export default function Suppliers() {
   const handleCreate = async (values: any) => {
     try {
       await apiService.createSupplier(values)
-      handleModalClose()
       message.success('Fornecedor criado com sucesso!')
-      loadData()
+      await loadData()
+      handleModalClose()
     } catch (error) {
       message.error('Erro ao criar fornecedor')
     }

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { Modal, Form, Input, message, Select, Button, Table, Tag, Avatar, Space, Popconfirm, InputNumber, Upload, Card, Divider, Row, Col } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { apiService } from '../services/api'
+import { apiService, extractArrayFromResponse } from '../services/api'
 import { 
   PlusOutlined, 
   HeartOutlined, 
@@ -80,11 +80,8 @@ export default function Pets() {
         apiService.getCustomers()
       ])
       
-      // Estrutura padronizada: { data, total, page, limit }
-      const processedPets = Array.isArray(petsData) ? petsData : (petsData as any)?.data || []
-
-      // Estrutura padronizada: { data, total, page, limit }
-      const processedCustomers = Array.isArray(customersData) ? customersData : (customersData as any)?.data || []
+      const processedPets = extractArrayFromResponse<Record<string, unknown>>(petsData, ['data', 'pets'])
+      const processedCustomers = extractArrayFromResponse<{ id: string; name: string; email?: string; phone?: string }>(customersData, ['data', 'customers'])
       
       // Mapear pets para incluir informações do cliente
       const petsWithCustomerInfo = processedPets.map((pet: any) => ({
@@ -94,8 +91,8 @@ export default function Pets() {
         customerPhone: pet.customer?.phone,
       }))
       
-      setPets(petsWithCustomerInfo)
-      setCustomers(processedCustomers)
+      setPets(petsWithCustomerInfo as Pet[])
+      setCustomers(processedCustomers as Customer[])
     } catch (error) {
       message.error('Erro ao carregar dados')
     } finally {

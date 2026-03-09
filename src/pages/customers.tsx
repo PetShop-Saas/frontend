@@ -75,12 +75,12 @@ export default function Customers() {
 
   const handleSubmit = async (values: any) => {
     try {
-      // Obter todos os valores do formulário (incluindo campos de outros passos)
-      const allValues = form.getFieldsValue()
-      const customerName = allValues.name || values.name
+      // Obter todos os valores do formulário (incluindo campos de outros passos/desmontados)
+      const allValues = form.getFieldsValue(true)
+      const customerName = (allValues.name || values.name || '').trim()
       
       // Validar nome do cliente
-      if (!customerName || !customerName.trim() || customerName.trim().length < 2) {
+      if (!customerName || customerName.length < 2) {
         message.error('Nome deve ter pelo menos 2 caracteres')
         return
       }
@@ -98,7 +98,7 @@ export default function Customers() {
 
       // Preparar dados do cliente - usar todos os valores do formulário
       const customerData: any = {
-        name: customerName.trim(),
+        name: customerName,
       }
 
       if (allValues.email?.trim()) customerData.email = allValues.email.trim()
@@ -447,28 +447,15 @@ export default function Customers() {
             label="Nome Completo"
             rules={[
               { required: true, message: 'Por favor, insira o nome do cliente' },
-              { 
+              {
                 validator: (_, value) => {
                   if (!value || value.trim().length < 2) {
                     return Promise.reject(new Error('Nome deve ter pelo menos 2 caracteres'))
-                  }
-                  if (!value.trim()) {
-                    return Promise.reject(new Error('Nome não pode ser apenas espaços'))
                   }
                   return Promise.resolve()
                 }
               }
             ]}
-            normalize={(value) => {
-              const trimmed = value?.trim() || ''
-              if (trimmed !== value) {
-                // Força o update do valor
-                setTimeout(() => {
-                  form.setFieldValue('name', trimmed)
-                }, 0)
-              }
-              return trimmed
-            }}
           >
             <Input 
               placeholder="Digite o nome completo" 

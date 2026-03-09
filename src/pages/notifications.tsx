@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { apiService } from '../services/api'
+import { apiService, extractArrayFromResponse } from '../services/api'
 import {
   Card,
   Button,
@@ -155,8 +155,7 @@ export default function Notifications() {
         apiService.getUnreadCount()
       ])
       
-      // Verificar se é um array direto ou objeto com propriedade
-      const notificationsArray = Array.isArray(notificationsData) ? notificationsData : (notificationsData as any)?.notifications || []
+      const notificationsArray = extractArrayFromResponse<Notification>(notificationsData, ['data', 'notifications'])
       setNotifications(notificationsArray)
       
       // Calcular estatísticas

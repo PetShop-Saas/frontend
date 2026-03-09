@@ -58,6 +58,26 @@ export interface Appointment {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
 
+/**
+ * Extrai array de resposta da API, suportando múltiplos formatos:
+ * - Array direto: [...]
+ * - Objeto com chave: { data: [...] } | { suppliers: [...] } | { customers: [...] } etc.
+ */
+export function extractArrayFromResponse<T>(
+  data: unknown,
+  keys: string[] = ['data', 'items']
+): T[] {
+  if (Array.isArray(data)) return data as T[]
+  if (data && typeof data === 'object') {
+    const obj = data as Record<string, unknown>
+    for (const key of keys) {
+      const val = obj[key]
+      if (Array.isArray(val)) return val as T[]
+    }
+  }
+  return []
+}
+
 class ApiService {
   private getAuthHeaders(): Record<string, string> {
     const token = localStorage.getItem('token')

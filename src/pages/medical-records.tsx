@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { apiService } from '../services/api'
+import { apiService, extractArrayFromResponse } from '../services/api'
 import {
   Card,
   Button,
@@ -104,12 +104,8 @@ export default function MedicalRecords() {
         apiService.getPets()
       ])
       
-      // Verificar se é um array direto ou objeto com propriedade
-      const recordsArray = Array.isArray(recordsData) ? recordsData : (recordsData as any)?.records || []
-      const petsArray = Array.isArray(petsData) ? petsData : (petsData as any)?.pets || []
-      
-      setRecords(recordsArray)
-      setPets(petsArray)
+      setRecords(extractArrayFromResponse(recordsData, ['data', 'records']))
+      setPets(extractArrayFromResponse(petsData, ['data', 'pets']))
     } catch (error) {
       message.error('Erro ao carregar dados')
     } finally {

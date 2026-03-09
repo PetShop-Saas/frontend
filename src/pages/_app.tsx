@@ -8,6 +8,7 @@ import '../styles/calendar.css'
 import PersistentLayout from '../components/Layout/PersistentLayout'
 import { PermissionProvider } from '../hooks/usePermissions'
 import { RouteGuard } from '../components/RouteGuard'
+import { ErrorBoundary } from '../components/ErrorBoundary'
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter()
@@ -29,18 +30,24 @@ export default function App({ Component, pageProps }: AppProps) {
 
   // Renderização condicional baseada na rota
   if (isPublicPage) {
-    return <Component {...pageProps} />
+    return (
+      <ErrorBoundary>
+        <Component {...pageProps} />
+      </ErrorBoundary>
+    )
   }
 
   // Para todas as outras páginas, usar layout persistente
   return (
-    <PermissionProvider>
-      <PersistentLayout>
-        <RouteGuard>
-          <Component {...pageProps} />
-        </RouteGuard>
-      </PersistentLayout>
-    </PermissionProvider>
+    <ErrorBoundary>
+      <PermissionProvider>
+        <PersistentLayout>
+          <RouteGuard>
+            <Component {...pageProps} />
+          </RouteGuard>
+        </PersistentLayout>
+      </PermissionProvider>
+    </ErrorBoundary>
   )
 }
 

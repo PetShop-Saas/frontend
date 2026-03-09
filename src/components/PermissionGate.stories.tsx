@@ -38,7 +38,7 @@ export const WithPermission: Story = {
     children: (
       <Card>
         <h3>Conteúdo Protegido</h3>
-        <p>Este conteúdo só é exibido se o usuário tiver a permissão 'users.create'</p>
+        <p>Este conteúdo só é exibido se o usuário tiver a permissão &apos;users.create&apos;</p>
         <Button type="primary">Ação Permitida</Button>
       </Card>
     ),

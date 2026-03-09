@@ -4,7 +4,7 @@ import { usePermissions } from '../hooks/usePermissions'
 import { PermissionGate } from '../components/PermissionGate'
 import { Modal, Form, Input, message, Select, Button, Table, Tag, Avatar, Space, Popconfirm, DatePicker, TimePicker, Card, Divider, Row, Col } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
-import { apiService } from '../services/api'
+import { apiService, extractArrayFromResponse } from '../services/api'
 import { 
   PlusOutlined, 
   CalendarOutlined, 
@@ -98,12 +98,15 @@ const AppointmentsPage: React.FC = () => {
         apiService.getServices()
       ])
       
-      // Mapear dados dos agendamentos com informações relacionadas
-      const appointmentsWithDetails = (appointmentsData as any)?.appointments?.map((appointment: any) => {
-        const customer = (customersData as any)?.customers?.find((c: any) => c.id === appointment.customerId)
-        const pet = (petsData as any)?.pets?.find((p: any) => p.id === appointment.petId)
-        const service = (servicesData as any)?.services?.find((s: any) => s.id === appointment.serviceId)
-        
+      const appointmentsList = extractArrayFromResponse<{ customerId: string; petId: string; serviceId: string; [key: string]: unknown }>(appointmentsData, ['data', 'appointments'])
+      const customersList = extractArrayFromResponse<{ id: string; name?: string; email?: string; phone?: string }>(customersData, ['data', 'customers'])
+      const petsList = extractArrayFromResponse<{ id: string; name?: string }>(petsData, ['data', 'pets'])
+      const servicesList = extractArrayFromResponse<{ id: string; name?: string; price?: number; duration?: number }>(servicesData, ['data', 'services'])
+
+      const appointmentsWithDetails = appointmentsList.map((appointment) => {
+        const customer = customersList.find((c) => c.id === appointment.customerId)
+        const pet = petsList.find((p) => p.id === appointment.petId)
+        const service = servicesList.find((s) => s.id === appointment.serviceId)
         return {
           ...appointment,
           customerName: customer?.name || 'N/A',
@@ -114,12 +117,12 @@ const AppointmentsPage: React.FC = () => {
           servicePrice: service?.price || 0,
           serviceDuration: service?.duration || 0
         }
-      }) || []
+      })
 
-      setAppointments(appointmentsWithDetails)
-      setCustomers((customersData as any)?.customers || [])
-      setPets((petsData as any)?.pets || [])
-      setServices((servicesData as any)?.services || [])
+      setAppointments(appointmentsWithDetails as Appointment[])
+      setCustomers(customersList as Customer[])
+      setPets(petsList as Pet[])
+      setServices(servicesList as Service[])
     } catch (error) {
       message.error('Erro ao carregar dados')
     } finally {

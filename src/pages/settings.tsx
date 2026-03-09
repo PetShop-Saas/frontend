@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { apiService } from '../services/api'
+import { apiService, extractArrayFromResponse } from '../services/api'
 import { 
   Card, 
   Button, 
@@ -147,9 +147,8 @@ export default function Settings() {
   const loadEmailTemplates = async () => {
     try {
       setLoadingTemplates(true)
-      const response = await apiService.getEmailTemplatesList() as any
-      // A resposta agora é um array direto de strings
-      const templatesList = Array.isArray(response) ? response : (response?.templates || [])
+      const response = await apiService.getEmailTemplatesList()
+      const templatesList = extractArrayFromResponse<string>(response, ['templates'])
       setEmailTemplates(templatesList)
       if (templatesList.length > 0) {
         setSelectedTemplate(templatesList[0])

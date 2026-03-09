@@ -1,4 +1,4 @@
-import { apiService } from '../api'
+import { apiService, extractArrayFromResponse } from '../api'
 
 // Mock fetch
 global.fetch = jest.fn()
@@ -728,6 +728,32 @@ describe('ApiService', () => {
       const result = await apiService.createSupplier(newSupplier)
 
       expect(result).toEqual(mockResponse)
+    })
+  })
+
+  describe('extractArrayFromResponse', () => {
+    it('deve retornar array quando resposta já é array', () => {
+      const data = [{ id: '1' }, { id: '2' }]
+      expect(extractArrayFromResponse(data)).toEqual(data)
+    })
+
+    it('deve extrair array de objeto com chave data', () => {
+      const data = { data: [{ id: '1' }] }
+      expect(extractArrayFromResponse(data)).toEqual([{ id: '1' }])
+    })
+
+    it('deve extrair array de objeto com chave customizada', () => {
+      const data = { suppliers: [{ id: '1', name: 'S1' }] }
+      expect(extractArrayFromResponse(data, ['suppliers'])).toEqual([{ id: '1', name: 'S1' }])
+    })
+
+    it('deve retornar array vazio para objeto sem array', () => {
+      expect(extractArrayFromResponse({ foo: 'bar' })).toEqual([])
+    })
+
+    it('deve retornar array vazio para null/undefined', () => {
+      expect(extractArrayFromResponse(null)).toEqual([])
+      expect(extractArrayFromResponse(undefined)).toEqual([])
     })
   })
 

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { useRouter } from 'next/router'
 import {
   Card,
@@ -920,11 +921,13 @@ export default function CompleteRegistration() {
                     <div className="text-center space-y-4">
                       <Title level={4}>Escaneie o QRCode com seu app de pagamento</Title>
                       {pixData.qrcodeImage ? (
-                        <img 
+                        <Image 
                           src={pixData.qrcodeImage} 
                           alt="QRCode PIX" 
+                          width={300}
+                          height={300}
+                          unoptimized
                           className="mx-auto border-2 border-gray-300 rounded-lg"
-                          style={{ maxWidth: '300px' }}
                         />
                       ) : pixData.qrcode ? (
                         <div className="p-8 bg-gray-100 rounded-lg">

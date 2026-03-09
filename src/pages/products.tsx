@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { apiService } from '../services/api'
+import { apiService, extractArrayFromResponse } from '../services/api'
 import { usePermissions } from '../hooks/usePermissions'
 import {
   Card,
@@ -197,9 +197,7 @@ export default function Products() {
   const handleExportStockReport = async () => {
     try {
       const report = await apiService.getStockReport()
-      // Normalizar para CSV simples
-      const anyReport: any = report as any
-      const rows = (Array.isArray(anyReport) ? anyReport : (anyReport?.items || [])) as any[]
+      const rows = extractArrayFromResponse(report, ['items'])
       if (!rows || rows.length === 0) {
         message.info('Relatório vazio')
         return
@@ -277,7 +275,7 @@ export default function Products() {
   const loadSuppliers = async () => {
     try {
       const suppliersData = await apiService.getSuppliers()
-      setSuppliers(Array.isArray(suppliersData) ? suppliersData : [])
+      setSuppliers(extractArrayFromResponse(suppliersData, ['data', 'suppliers']))
     } catch (error) {
       // Ignorar erro ao carregar fornecedores
     }
@@ -287,9 +285,7 @@ export default function Products() {
     try {
       setLoading(true)
       const productsData = await apiService.getProducts()
-      // Estrutura padronizada: { data, total, page, limit }
-      const productsArray = Array.isArray(productsData) ? productsData : (productsData as any)?.data || []
-      setProducts(productsArray)
+      setProducts(extractArrayFromResponse(productsData, ['data', 'products']))
     } catch (error) {
       message.error('Erro ao carregar produtos')
     } finally {
@@ -313,7 +309,7 @@ export default function Products() {
         apiService.getInventoryStats(),
       ])
       
-      setInventory(Array.isArray(inventoryData) ? inventoryData : [])
+      setInventory(extractArrayFromResponse(inventoryData, ['data', 'items']))
       setStats(statsData)
     } catch (error) {
       message.error('Erro ao carregar dados de estoque')
@@ -332,7 +328,7 @@ export default function Products() {
       if (movementFilters.productId) filters.productId = movementFilters.productId
 
       const movementsData = await apiService.getStockMovements(filters)
-      setStockMovements(Array.isArray(movementsData) ? movementsData : [])
+      setStockMovements(extractArrayFromResponse(movementsData, ['data', 'items']))
     } catch (error) {
       message.error('Erro ao carregar movimentações')
     } finally {

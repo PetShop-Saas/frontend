@@ -91,6 +91,7 @@ class ApiService {
     if (status === 401) {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
+      document.cookie = 'token=; path=/; max-age=0; samesite=strict'
       window.location.href = '/login'
       throw new Error('Unauthorized')
     }

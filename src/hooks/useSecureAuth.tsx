@@ -76,6 +76,7 @@ export const useSecureAuth = () => {
 
   const logout = () => {
     localStorage.removeItem('token')
+    document.cookie = 'token=; path=/; max-age=0; samesite=strict'
     setUser(null)
     setPermissions(null)
     setIsAuthenticated(false)

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
-import { Row, Col, Card, Statistic, List, Avatar, Space, Typography, Spin } from 'antd'
+import { Row, Col, Card, Statistic, List, Avatar, Space, Typography, Spin, message, Button } from 'antd'
 import { 
   UserOutlined, 
   HeartOutlined, 
@@ -55,6 +55,7 @@ export default function Dashboard() {
       const dashboardStats = await apiService.getDashboardStats()
       setStats(dashboardStats as any)
     } catch (error) {
+      message.error('Erro ao carregar dados do dashboard. Tente novamente.')
     } finally {
       setLoading(false)
     }

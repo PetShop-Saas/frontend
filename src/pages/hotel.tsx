@@ -42,18 +42,27 @@ export default function Hotel() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [roomsData, bookingsData, customersData, petsData, statsData] = await Promise.all([
+      const [roomsResult, bookingsResult, customersResult, petsResult, statsResult] = await Promise.allSettled([
         apiService.getHotelRooms(),
         apiService.getHotelBookings(),
         apiService.getCustomers(),
         apiService.getPets(),
         apiService.getHotelStats()
       ])
-      setRooms(roomsData as any)
-      setBookings(bookingsData as any)
-      setCustomers(customersData as any)
-      setPets(petsData as any)
-      setStats(statsData as any)
+
+      if (roomsResult.status === 'fulfilled') setRooms(roomsResult.value as any)
+      else message.warning('Erro ao carregar quartos')
+
+      if (bookingsResult.status === 'fulfilled') setBookings(bookingsResult.value as any)
+      else message.warning('Erro ao carregar reservas')
+
+      if (customersResult.status === 'fulfilled') setCustomers(customersResult.value as any)
+      else message.warning('Erro ao carregar clientes')
+
+      if (petsResult.status === 'fulfilled') setPets(petsResult.value as any)
+      else message.warning('Erro ao carregar pets')
+
+      if (statsResult.status === 'fulfilled') setStats(statsResult.value as any)
     } catch (error) {
       message.error('Erro ao carregar dados do hotel')
     } finally {

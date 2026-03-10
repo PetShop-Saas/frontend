@@ -3,6 +3,8 @@ import { useRouter } from 'next/router'
 import { Modal, Form, Input, message, Select, Button, Table, Tag, Avatar, Space, Popconfirm, InputNumber, Upload, Card, Divider, Row, Col } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { apiService, extractArrayFromResponse } from '../services/api'
+import PageSkeleton from '../components/common/PageSkeleton'
+import EmptyState from '../components/common/EmptyState'
 import { 
   PlusOutlined, 
   HeartOutlined, 
@@ -259,14 +261,7 @@ export default function Pets() {
 
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
-          <p className="mt-4 text-gray-600">Carregando...</p>
-        </div>
-      </div>
-    )
+    return <PageSkeleton type="table" rows={8} />
   }
 
   return (
@@ -360,24 +355,13 @@ export default function Pets() {
             className="custom-table"
             locale={{
               emptyText: (
-                <div className="text-center py-12">
-                  <HeartOutlined className="text-6xl text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mt-4">Nenhum pet encontrado</h3>
-                  <p className="mt-2 text-sm text-gray-500 mb-6">
-                    {searchTerm || filterSpecies || filterCustomer ? 'Tente ajustar seus filtros.' : 'Comece adicionando o primeiro pet.'}
-                  </p>
-                  {!searchTerm && !filterSpecies && !filterCustomer && (
-                    <Button
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      onClick={() => setShowModal(true)}
-                      size="large"
-                      className="bg-green-600 hover:bg-green-700 border-green-600"
-                    >
-                      Adicionar Primeiro Pet
-                    </Button>
-                  )}
-                </div>
+                <EmptyState
+                  icon={<HeartOutlined />}
+                  title="Nenhum pet encontrado"
+                  description={searchTerm || filterSpecies || filterCustomer ? 'Tente ajustar seus filtros.' : 'Comece adicionando o primeiro pet.'}
+                  actionLabel={!searchTerm && !filterSpecies && !filterCustomer ? 'Adicionar Primeiro Pet' : undefined}
+                  onAction={!searchTerm && !filterSpecies && !filterCustomer ? () => setShowModal(true) : undefined}
+                />
               )
             }}
           />

@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { Modal, Form, Input, message, DatePicker, Select, Button, Steps, InputNumber, Switch, Row, Col, Upload, Avatar, Table, Tag } from 'antd'
+import PageSkeleton from '../components/common/PageSkeleton'
+import EmptyState from '../components/common/EmptyState'
 import type { ColumnsType } from 'antd/es/table'
 import { apiService, extractArrayFromResponse } from '../services/api'
 import { PlusOutlined, UserOutlined, MailOutlined, PhoneOutlined, IdcardOutlined, EnvironmentOutlined, SearchOutlined, EditOutlined, CameraOutlined, DollarOutlined, EyeOutlined } from '@ant-design/icons'
@@ -426,16 +428,7 @@ export default function Customers() {
     },
   ]
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
-          <p className="mt-4 text-gray-600">Carregando...</p>
-        </div>
-      </div>
-    )
-  }
+  if (loading) return <PageSkeleton type="table" rows={8} />
 
   const steps = [
     {
@@ -895,24 +888,13 @@ export default function Customers() {
             className="custom-table"
             locale={{
               emptyText: (
-                <div className="text-center py-12">
-                  <UserOutlined className="text-6xl text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mt-4">Nenhum cliente encontrado</h3>
-                  <p className="mt-2 text-sm text-gray-500 mb-6">
-                    {searchTerm ? 'Tente ajustar seus filtros.' : 'Comece adicionando seu primeiro cliente.'}
-                  </p>
-                  {!searchTerm && (
-                    <Button
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      onClick={() => setShowModal(true)}
-                      size="large"
-                      className="bg-green-600 hover:bg-green-700 border-green-600"
-                    >
-                      Adicionar Primeiro Cliente
-                    </Button>
-                  )}
-                </div>
+                <EmptyState
+                  icon={<UserOutlined />}
+                  title="Nenhum cliente encontrado"
+                  description={searchTerm ? 'Tente ajustar seus filtros.' : 'Comece adicionando seu primeiro cliente.'}
+                  actionLabel={!searchTerm ? 'Adicionar Primeiro Cliente' : undefined}
+                  onAction={!searchTerm ? () => setShowModal(true) : undefined}
+                />
               )
             }}
           />

@@ -10,6 +10,7 @@ import {
 import { apiService } from '../services/api'
 import { DashboardSkeleton } from '../components/common/PageSkeleton'
 import EmptyState from '../components/common/EmptyState'
+import { useTheme } from '../contexts/ThemeContext'
 
 interface User {
   id: string
@@ -64,23 +65,38 @@ export default function Dashboard() {
   }
 
   const { Title, Text } = Typography
+  const { isDark } = useTheme()
 
   if (loading) return <DashboardSkeleton />
+
+  const textPrimary = isDark ? '#f9fafb' : '#1f2937'
+  const textSecondary = isDark ? '#9ca3af' : '#6b7280'
+  const surfaceBg = isDark ? '#111827' : '#ffffff'
+  const elevatedBg = isDark ? '#1f2937' : '#f9fafb'
+  const borderColor = isDark ? '#374151' : '#e5e7eb'
 
   return (
     <div>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          {/* Welcome Section - Simplificado */}
-          <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-600">
-            <Title level={3} style={{ color: '#1f2937', margin: 0, fontSize: '24px' }}>
+          {/* Welcome Section */}
+          <div
+            style={{
+              background: surfaceBg,
+              borderLeft: '4px solid #16a34a',
+              borderRadius: 8,
+              padding: '24px',
+              boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+            }}
+          >
+            <Title level={3} style={{ color: textPrimary, margin: 0, fontSize: '24px' }}>
               Bem-vindo ao Dashboard
             </Title>
-            <Text style={{ color: '#6b7280', fontSize: 16 }}>
+            <Text style={{ color: textSecondary, fontSize: 16 }}>
               Olá, {user?.name}! Aqui você pode acompanhar o desempenho do seu petshop.
             </Text>
           </div>
 
-          {/* Stats Cards - Tons de Verde */}
+          {/* Stats Cards */}
           <Row gutter={[16, 16]}>
             <Col xs={24} sm={12} lg={6}>
               <Card className="hover:shadow-md transition-shadow">
@@ -125,38 +141,49 @@ export default function Dashboard() {
             </Col>
           </Row>
 
-          {/* Recent Activity - Simplificado */}
-          <Card 
-            title="Atividade Recente" 
+          {/* Recent Activity */}
+          <Card
+            title="Atividade Recente"
             className="shadow-sm"
-            styles={{ 
+            styles={{
               header: {
-                backgroundColor: '#f9fafb', 
-                borderBottom: '1px solid #e5e7eb',
-                color: '#374151'
-              }
+                backgroundColor: elevatedBg,
+                borderBottom: `1px solid ${borderColor}`,
+                color: textPrimary,
+              },
+              body: {
+                backgroundColor: surfaceBg,
+              },
             }}
           >
             <List
               dataSource={stats?.recentActivity || []}
               locale={{ emptyText: <EmptyState title="Nenhuma atividade recente" compact /> }}
-              renderItem={(activity, index) => (
-                <List.Item className="hover:bg-gray-50 transition-colors">
+              renderItem={(activity) => (
+                <List.Item
+                  style={{
+                    borderBottomColor: borderColor,
+                    cursor: 'default',
+                  }}
+                  className="transition-colors"
+                  onMouseEnter={e => (e.currentTarget.style.background = elevatedBg)}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                >
                   <List.Item.Meta
                     avatar={
-                      <Avatar 
-                        style={{ 
-                          backgroundColor: activity.type === 'customer' ? '#059669' : 
-                                         activity.type === 'pet' ? '#10b981' : '#047857' 
+                      <Avatar
+                        style={{
+                          backgroundColor: activity.type === 'customer' ? '#059669' :
+                                           activity.type === 'pet' ? '#10b981' : '#047857'
                         }}
                       >
                         {activity.type === 'customer' ? <UserOutlined /> :
                          activity.type === 'pet' ? <HeartOutlined /> : <CalendarOutlined />}
                       </Avatar>
                     }
-                    title={<span style={{ color: '#374151' }}>{activity.description}</span>}
+                    title={<span style={{ color: textPrimary }}>{activity.description}</span>}
                     description={
-                      <span style={{ color: '#6b7280' }}>
+                      <span style={{ color: textSecondary }}>
                         {new Date(activity.date).toLocaleDateString('pt-BR')}
                       </span>
                     }

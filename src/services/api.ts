@@ -180,8 +180,8 @@ class ApiService {
 
 
   // Customers endpoints
-  async getCustomers(): Promise<Customer[]> {
-    return this.request<Customer[]>('/customers')
+  async getCustomers(page = 1, limit = 50): Promise<any> {
+    return this.request<any>(`/customers?page=${page}&limit=${limit}`)
   }
 
   async createCustomer(data: Partial<Customer>): Promise<Customer> {
@@ -230,8 +230,8 @@ class ApiService {
   }
 
   // Appointments endpoints
-  async getAppointments(): Promise<Appointment[]> {
-    return this.request<Appointment[]>('/appointments')
+  async getAppointments(page = 1, limit = 50): Promise<any> {
+    return this.request<any>(`/appointments?page=${page}&limit=${limit}`)
   }
 
   async createAppointment(data: Partial<Appointment>): Promise<Appointment> {
@@ -280,8 +280,8 @@ class ApiService {
   }
 
   // Products endpoints
-  async getProducts(): Promise<Product[]> {
-    return this.request<Product[]>('/products')
+  async getProducts(page = 1, limit = 50): Promise<any> {
+    return this.request<any>(`/products?page=${page}&limit=${limit}`)
   }
 
   async createProduct(data: Partial<Product>): Promise<Product> {
@@ -305,8 +305,8 @@ class ApiService {
   }
 
   // Sales endpoints
-  async getSales() {
-    return this.request('/sales')
+  async getSales(page = 1, limit = 50) {
+    return this.request(`/sales?page=${page}&limit=${limit}`)
   }
 
   async createSale(data: any) {
@@ -1474,6 +1474,37 @@ class ApiService {
   async getImageByCategory(category: string) {
     const token = localStorage.getItem('token')
     return `${API_BASE_URL}/images/category/${category}/active?token=${token}`
+  }
+
+  // AbacatePay endpoints
+  async createAbacatePixQrCode(data: { amount: number; expiresIn?: number; description?: string }) {
+    return this.request('/abacatepay/pix', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async getAbacatePixStatus(id: string) {
+    return this.request(`/abacatepay/pix/${id}/status`)
+  }
+
+  async simulateAbacatePixPayment(id: string) {
+    return this.request(`/abacatepay/pix/${id}/simulate`, { method: 'POST' })
+  }
+
+  async createAbacateBilling(data: { amount: number; description: string; dueDate?: string }) {
+    return this.request('/abacatepay/billing', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async listAbacateBillings() {
+    return this.request('/abacatepay/billing')
+  }
+
+  async getAbacateBillingById(id: string) {
+    return this.request(`/abacatepay/billing/${id}`)
   }
 }
 

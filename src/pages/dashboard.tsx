@@ -75,6 +75,8 @@ export default function Dashboard() {
   const elevatedBg = isDark ? '#1f2937' : '#f9fafb'
   const borderColor = isDark ? '#374151' : '#e5e7eb'
 
+  if (loading) return <DashboardSkeleton />
+
   return (
     <div>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>

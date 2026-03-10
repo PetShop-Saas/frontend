@@ -570,10 +570,10 @@ export default function PersistentLayout({ children }: LayoutProps) {
                       dataSource={notifications}
                       renderItem={(item: any) => (
                         <List.Item
-                          style={{ 
+                          style={{
                             padding: '12px 0',
                             cursor: 'pointer',
-                            borderBottom: '1px solid #f0f0f0'
+                            borderBottom: `1px solid ${isDark ? '#374151' : '#f0f0f0'}`
                           }}
                           onClick={async () => {
                             try {
@@ -644,7 +644,7 @@ export default function PersistentLayout({ children }: LayoutProps) {
               <Badge count={unreadCount} size="small" offset={[-5, 5]}>
                 <Button 
                   type="text" 
-                  icon={<BellOutlined style={{ fontSize: 18, color: '#6b7280' }} />}
+                  icon={<BellOutlined style={{ fontSize: 18, color: isDark ? '#9ca3af' : '#6b7280' }} />}
                   onClick={() => {
                     // Recarregar notificações ao abrir
                     setLoadingNotifications(true)
@@ -681,10 +681,10 @@ export default function PersistentLayout({ children }: LayoutProps) {
                   alignItems: 'flex-start',
                   lineHeight: 1.2
                 }}>
-                  <span style={{ fontSize: 14, fontWeight: 500, color: '#1f2937' }}>
+                  <span style={{ fontSize: 14, fontWeight: 500, color: isDark ? '#f3f4f6' : '#1f2937' }}>
                     {user?.name || 'Usuário'}
                   </span>
-                  <span style={{ fontSize: 12, color: '#6b7280' }}>
+                  <span style={{ fontSize: 12, color: isDark ? '#9ca3af' : '#6b7280' }}>
                     {user?.role || 'USER'}
                   </span>
                 </div>

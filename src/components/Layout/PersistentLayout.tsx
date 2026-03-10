@@ -1,29 +1,30 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Image from 'next/image'
-import { Layout as AntLayout, Menu, Avatar, Dropdown, Button, Badge, Space, Typography, Popover, List, Empty, Divider, message } from 'antd'
+import { Layout as AntLayout, Menu, Avatar, Dropdown, Button, Badge, Space, Typography, Popover, List, Empty, Divider, message, Tooltip } from 'antd'
 import { usePersonalization } from '../../hooks/usePersonalization'
 import { useGlobalPersonalization } from '../../hooks/useGlobalPersonalization'
 import { usePermissions } from '../../hooks/usePermissions'
+import { useTheme } from '../../contexts/ThemeContext'
 import { apiService } from '../../services/api'
 import TrialBanner from '../TrialBanner'
 import PlanBadge from '../PlanBadge'
-import { 
-  DashboardOutlined, 
-  UserOutlined, 
-  TeamOutlined, 
-  CalendarOutlined, 
-  ToolOutlined, 
-  ShoppingOutlined, 
-  ShoppingCartOutlined, 
-  MedicineBoxOutlined, 
-  HeartOutlined, 
-  BarChartOutlined, 
-  DollarOutlined, 
-  SettingOutlined, 
-  LogoutOutlined, 
-  BellOutlined, 
-  MenuFoldOutlined, 
+import {
+  DashboardOutlined,
+  UserOutlined,
+  TeamOutlined,
+  CalendarOutlined,
+  ToolOutlined,
+  ShoppingOutlined,
+  ShoppingCartOutlined,
+  MedicineBoxOutlined,
+  HeartOutlined,
+  BarChartOutlined,
+  DollarOutlined,
+  SettingOutlined,
+  LogoutOutlined,
+  BellOutlined,
+  MenuFoldOutlined,
   MenuUnfoldOutlined,
   BgColorsOutlined,
   DatabaseOutlined,
@@ -34,7 +35,9 @@ import {
   CustomerServiceOutlined,
   ControlOutlined,
   InboxOutlined,
-  AppstoreOutlined
+  AppstoreOutlined,
+  SunOutlined,
+  MoonOutlined
 } from '@ant-design/icons'
 
 const { Header, Sider, Content } = AntLayout
@@ -52,8 +55,9 @@ export default function PersistentLayout({ children }: LayoutProps) {
   const [loadingNotifications, setLoadingNotifications] = useState(false)
   const router = useRouter()
   const { settings: personalizationSettings } = usePersonalization()
-  useGlobalPersonalization() // Aplicar configurações globais
+  useGlobalPersonalization()
   const { canAccessSidebarItem, user: userFromHook, loading: permissionsLoading } = usePermissions()
+  const { isDark, toggleTheme } = useTheme()
 
   // Carregar dados do usuário apenas uma vez
   useEffect(() => {
@@ -388,8 +392,12 @@ export default function PersistentLayout({ children }: LayoutProps) {
     return titles[pathname] || 'PetFlow'
   }
 
+  const headerBg = isDark ? '#1f2937' : (personalizationSettings.headerColor ?? '#fff')
+  const contentBg = isDark ? '#111827' : '#fff'
+  const layoutBg = isDark ? '#0d1117' : '#f9fafb'
+
   return (
-    <AntLayout style={{ minHeight: '100vh' }}>
+    <AntLayout style={{ minHeight: '100vh', background: layoutBg }}>
       <Sider 
         trigger={null} 
         collapsible 
@@ -486,8 +494,8 @@ export default function PersistentLayout({ children }: LayoutProps) {
       </Sider>
 
       <AntLayout style={{ marginLeft: collapsed ? 80 : 256 }}>
-        <Header style={{ 
-          background: personalizationSettings.headerColor ?? '#fff', 
+        <Header style={{
+          background: headerBg,
           padding: '0 24px', 
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
           position: 'fixed',
@@ -521,6 +529,17 @@ export default function PersistentLayout({ children }: LayoutProps) {
 
           <Space size="middle">
             <PlanBadge />
+
+            <Tooltip title={isDark ? 'Modo claro' : 'Modo escuro'}>
+              <Button
+                type="text"
+                icon={isDark
+                  ? <SunOutlined style={{ fontSize: 18, color: '#facc15' }} />
+                  : <MoonOutlined style={{ fontSize: 18, color: '#6b7280' }} />
+                }
+                onClick={toggleTheme}
+              />
+            </Tooltip>
             
             <Popover
               content={
@@ -685,10 +704,10 @@ export default function PersistentLayout({ children }: LayoutProps) {
           <TrialBanner />
         </div>
         
-        <Content style={{ 
-          margin: '24px 16px', 
-          padding: 24, 
-          background: '#fff', 
+        <Content style={{
+          margin: '24px 16px',
+          padding: 24,
+          background: contentBg,
           borderRadius: personalizationSettings.borderRadius ?? 8,
           marginTop: '88px',
           fontSize: personalizationSettings.fontSize ? `${personalizationSettings.fontSize}px` : '14px',

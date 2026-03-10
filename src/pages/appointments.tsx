@@ -4,6 +4,8 @@ import { Modal, Form, Input, message, Select, Button, Table, Tag, Avatar, Space,
 import type { ColumnsType } from 'antd/es/table'
 import { apiService, extractArrayFromResponse } from '../services/api'
 import { AppointmentForm } from '../components/appointments/AppointmentForm'
+import PageSkeleton from '../components/common/PageSkeleton'
+import EmptyState from '../components/common/EmptyState'
 import { AppointmentFilters } from '../components/appointments/AppointmentFilters'
 import { 
   PlusOutlined, 
@@ -334,14 +336,7 @@ export default function Appointments() {
   ]
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
-          <p className="mt-4 text-gray-600">Carregando...</p>
-        </div>
-      </div>
-    )
+    return <PageSkeleton type="table" rows={8} />
   }
 
   return (
@@ -486,36 +481,13 @@ export default function Appointments() {
             className="custom-table"
             locale={{
               emptyText: (
-                <div className="text-center py-12">
-                  <CalendarOutlined className="text-6xl text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mt-4">Nenhum agendamento encontrado</h3>
-                  <p className="mt-2 text-sm text-gray-500 mb-6">
-                    {searchTerm || filterStatus || filterCustomer ? 'Tente ajustar seus filtros.' : 'Comece criando o primeiro agendamento.'}
-                  </p>
-                  {!searchTerm && !filterStatus && !filterCustomer && (
-                    <Button
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      onClick={() => setShowModal(true)}
-                      size="large"
-                      className="bg-green-600 hover:bg-green-700 hover:border-green-700 border-green-600 px-6 py-3"
-                      style={{
-                        backgroundColor: '#16a34a',
-                        borderColor: '#16a34a'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#15803d'
-                        e.currentTarget.style.borderColor = '#15803d'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#16a34a'
-                        e.currentTarget.style.borderColor = '#16a34a'
-                      }}
-                    >
-                      Criar Primeiro Agendamento
-                    </Button>
-                  )}
-                </div>
+                <EmptyState
+                  icon={<CalendarOutlined />}
+                  title="Nenhum agendamento encontrado"
+                  description={searchTerm || filterStatus || filterCustomer ? 'Tente ajustar seus filtros.' : 'Comece criando o primeiro agendamento.'}
+                  actionLabel={!searchTerm && !filterStatus && !filterCustomer ? 'Criar Primeiro Agendamento' : undefined}
+                  onAction={!searchTerm && !filterStatus && !filterCustomer ? () => setShowModal(true) : undefined}
+                />
               )
             }}
           />

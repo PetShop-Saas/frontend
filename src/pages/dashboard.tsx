@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/router'
-import { Row, Col, Card, Statistic, List, Avatar, Space, Typography, Spin, message, Button } from 'antd'
-import { 
-  UserOutlined, 
-  HeartOutlined, 
-  CalendarOutlined, 
+import { Row, Col, Card, Statistic, List, Avatar, Space, Typography, message, Button } from 'antd'
+import {
+  UserOutlined,
+  HeartOutlined,
+  CalendarOutlined,
   DollarOutlined
 } from '@ant-design/icons'
 import { apiService } from '../services/api'
+import { DashboardSkeleton } from '../components/common/PageSkeleton'
+import EmptyState from '../components/common/EmptyState'
 
 interface User {
   id: string
@@ -62,6 +64,8 @@ export default function Dashboard() {
   }
 
   const { Title, Text } = Typography
+
+  if (loading) return <DashboardSkeleton />
 
   return (
     <div>
@@ -135,7 +139,7 @@ export default function Dashboard() {
           >
             <List
               dataSource={stats?.recentActivity || []}
-              locale={{ emptyText: 'Nenhuma atividade recente' }}
+              locale={{ emptyText: <EmptyState title="Nenhuma atividade recente" compact /> }}
               renderItem={(activity, index) => (
                 <List.Item className="hover:bg-gray-50 transition-colors">
                   <List.Item.Meta

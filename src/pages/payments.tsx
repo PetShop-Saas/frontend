@@ -206,7 +206,7 @@ export default function Payments() {
                   {!pixResult ? (
                     <div style={{ textAlign: 'center', padding: '40px 0', color: '#6b7280' }}>
                       <QrcodeOutlined style={{ fontSize: 48, color: '#d1d5db' }} />
-                      <p style={{ marginTop: 16 }}>Clique em "Novo PIX" para gerar um QR Code de pagamento</p>
+                      <p style={{ marginTop: 16 }}>Clique em &quot;Novo PIX&quot; para gerar um QR Code de pagamento</p>
                     </div>
                   ) : (
                     <Space direction="vertical" size="middle" style={{ width: '100%', alignItems: 'center' }}>

@@ -34,6 +34,20 @@ const nextConfig = {
     // Permite que o build continue mesmo com erros de tipo (se necessário)
     ignoreBuildErrors: false,
   },
+  async redirects() {
+    return [
+      {
+        source: '/financial',
+        destination: '/financial-reports',
+        permanent: true,
+      },
+      {
+        source: '/register',
+        destination: '/complete-registration',
+        permanent: false,
+      },
+    ]
+  },
   async rewrites() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
     return [

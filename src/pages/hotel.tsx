@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { Card, Table, Button, Modal, Form, Input, Select, DatePicker, message, Tag, Space, Tabs, Statistic, Row, Col, InputNumber, Descriptions } from 'antd'
 import { PlusOutlined, HomeOutlined, LoginOutlined, LogoutOutlined, CalendarOutlined } from '@ant-design/icons'
-import { apiService } from '../services/api'
+import { apiService, extractArrayFromResponse } from '../services/api'
 import dayjs from 'dayjs'
 
 const { TabPane } = Tabs
@@ -50,16 +50,16 @@ export default function Hotel() {
         apiService.getHotelStats()
       ])
 
-      if (roomsResult.status === 'fulfilled') setRooms(roomsResult.value as any)
+      if (roomsResult.status === 'fulfilled') setRooms(extractArrayFromResponse(roomsResult.value))
       else message.warning('Erro ao carregar quartos')
 
-      if (bookingsResult.status === 'fulfilled') setBookings(bookingsResult.value as any)
+      if (bookingsResult.status === 'fulfilled') setBookings(extractArrayFromResponse(bookingsResult.value))
       else message.warning('Erro ao carregar reservas')
 
-      if (customersResult.status === 'fulfilled') setCustomers(customersResult.value as any)
+      if (customersResult.status === 'fulfilled') setCustomers(extractArrayFromResponse(customersResult.value, ['data', 'customers', 'items']))
       else message.warning('Erro ao carregar clientes')
 
-      if (petsResult.status === 'fulfilled') setPets(petsResult.value as any)
+      if (petsResult.status === 'fulfilled') setPets(extractArrayFromResponse(petsResult.value, ['data', 'pets', 'items']))
       else message.warning('Erro ao carregar pets')
 
       if (statsResult.status === 'fulfilled') setStats(statsResult.value as any)
@@ -159,8 +159,8 @@ export default function Hotel() {
         apiService.getHotelDailyReports(booking.id),
         apiService.getHotelServiceUsage(booking.id)
       ])
-      setDailyReports(reports as any)
-      setServiceUsage(services as any)
+      setDailyReports(extractArrayFromResponse(reports))
+      setServiceUsage(extractArrayFromResponse(services))
       setShowDailyReportModal(true)
     } catch (error) {
       message.error('Erro ao carregar detalhes')
@@ -179,7 +179,7 @@ export default function Hotel() {
       message.success('Relatório diário adicionado!')
       reportForm.resetFields()
       const reports = await apiService.getHotelDailyReports(selectedBooking.id)
-      setDailyReports(reports as any)
+      setDailyReports(extractArrayFromResponse(reports))
     } catch (error) {
       message.error('Erro ao adicionar relatório')
     }

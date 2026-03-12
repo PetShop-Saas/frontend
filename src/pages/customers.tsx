@@ -912,7 +912,6 @@ export default function Customers() {
           onCancel={handleCancel}
           footer={null}
           width={800}
-          destroyOnClose
         >
           <Form
             form={form}

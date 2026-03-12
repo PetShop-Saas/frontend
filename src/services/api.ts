@@ -1,3 +1,4 @@
+import { Modal } from 'antd'
 import type { AuthResponse, ApiUser, UserPermissionsResponse } from '@/types/api'
 
 export interface Customer {
@@ -92,7 +93,12 @@ class ApiService {
       localStorage.removeItem('token')
       localStorage.removeItem('user')
       document.cookie = 'token=; path=/; max-age=0; samesite=strict'
-      window.location.href = '/login'
+      Modal.warning({
+        title: 'Sessão expirada',
+        content: 'Sua sessão expirou. Faça login novamente.',
+        onOk: () => { window.location.href = '/login' },
+        okText: 'Fazer login',
+      })
       throw new Error('Unauthorized')
     }
     if (status === 403) {
@@ -332,6 +338,10 @@ class ApiService {
   // Dashboard stats
   async getDashboardStats() {
     return this.request('/dashboard/stats')
+  }
+
+  async getDashboardCharts() {
+    return this.request('/dashboard/charts')
   }
 
   // Notifications endpoints

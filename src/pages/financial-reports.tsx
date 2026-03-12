@@ -99,10 +99,25 @@ export default function FinancialReports() {
       const endDate = dateRange[1].format('YYYY-MM-DD')
 
       switch (reportType) {
-        case 'revenue':
-          const revenue = await apiService.getRevenueReport(startDate, endDate)
-          setRevenueReport(revenue as any)
+        case 'revenue': {
+          const revenue = await apiService.getRevenueReport(startDate, endDate) as any
+          const revenueData = revenue as RevenueReport
+          if (!revenueData?.totalRevenue) {
+            const balance = await apiService.getCashFlowBalance(startDate, endDate) as any
+            setRevenueReport({
+              totalRevenue: balance?.totalInflow ?? 0,
+              completedRevenue: balance?.totalInflow ?? 0,
+              pendingRevenue: 0,
+              totalSales: balance?.entryCount ?? 0,
+              completedSales: balance?.entryCount ?? 0,
+              pendingSales: 0,
+              averageTicket: balance?.entryCount ? (balance.totalInflow / balance.entryCount) : 0,
+            })
+          } else {
+            setRevenueReport(revenueData)
+          }
           break
+        }
         case 'expenses':
           const expenses = await apiService.getExpensesReport(startDate, endDate)
           setExpensesReport(expenses as any)

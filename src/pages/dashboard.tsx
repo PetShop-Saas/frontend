@@ -5,12 +5,23 @@ import {
   UserOutlined,
   HeartOutlined,
   CalendarOutlined,
-  DollarOutlined
+  DollarOutlined,
+  ReloadOutlined,
 } from '@ant-design/icons'
+import dynamic from 'next/dynamic'
 import { apiService } from '../services/api'
 import { DashboardSkeleton } from '../components/common/PageSkeleton'
 import EmptyState from '../components/common/EmptyState'
 import { useTheme } from '../contexts/ThemeContext'
+import type { RevenueDataPoint } from '../components/charts/RevenueChart'
+import type { AppointmentStatusData } from '../components/charts/AppointmentsPieChart'
+import type { TopProductData } from '../components/charts/TopProductsChart'
+import type { MonthlyComparisonData } from '../components/charts/MonthlyComparisonChart'
+
+const RevenueChart = dynamic(() => import('../components/charts/RevenueChart'), { ssr: false })
+const AppointmentsPieChart = dynamic(() => import('../components/charts/AppointmentsPieChart'), { ssr: false })
+const TopProductsChart = dynamic(() => import('../components/charts/TopProductsChart'), { ssr: false })
+const MonthlyComparisonChart = dynamic(() => import('../components/charts/MonthlyComparisonChart'), { ssr: false })
 
 interface User {
   id: string
@@ -33,11 +44,49 @@ interface DashboardStats {
   }>
 }
 
+interface ChartData {
+  revenue: RevenueDataPoint[]
+  appointmentsByStatus: AppointmentStatusData[]
+  topProducts: TopProductData[]
+  monthlyComparison: MonthlyComparisonData[]
+}
+
+function buildFallbackChartData(): ChartData {
+  const today = new Date()
+  const revenue: RevenueDataPoint[] = Array.from({ length: 30 }, (_, i) => {
+    const d = new Date(today)
+    d.setDate(today.getDate() - (29 - i))
+    return {
+      date: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
+      revenue: 0,
+    }
+  })
+  return {
+    revenue,
+    appointmentsByStatus: [
+      { status: 'PENDING', count: 0 },
+      { status: 'CONFIRMED', count: 0 },
+      { status: 'COMPLETED', count: 0 },
+      { status: 'CANCELLED', count: 0 },
+    ],
+    topProducts: [],
+    monthlyComparison: [
+      { week: 'Sem 1', currentMonth: 0, previousMonth: 0 },
+      { week: 'Sem 2', currentMonth: 0, previousMonth: 0 },
+      { week: 'Sem 3', currentMonth: 0, previousMonth: 0 },
+      { week: 'Sem 4', currentMonth: 0, previousMonth: 0 },
+    ],
+  }
+}
+
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null)
   const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [chartData, setChartData] = useState<ChartData>(buildFallbackChartData())
   const [loading, setLoading] = useState(true)
   const router = useRouter()
+  const { Title, Text } = Typography
+  const { isDark } = useTheme()
 
   useEffect(() => {
     const token = localStorage.getItem('token')
@@ -50,22 +99,48 @@ export default function Dashboard() {
 
     setUser(JSON.parse(userData))
     loadDashboardData()
-  }, [router])
-
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const loadDashboardData = async () => {
+    setLoading(true)
     try {
-      const dashboardStats = await apiService.getDashboardStats()
-      setStats(dashboardStats as any)
-    } catch (error) {
-      message.error('Erro ao carregar dados do dashboard. Tente novamente.')
+      const today = new Date()
+      const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
+        .toISOString().slice(0, 10)
+      const endOfMonth = today.toISOString().slice(0, 10)
+
+      const [dashboardStats, chartsResult, cashFlowBalance] = await Promise.allSettled([
+        apiService.getDashboardStats(),
+        apiService.getDashboardCharts(),
+        apiService.getCashFlowBalance(startOfMonth, endOfMonth),
+      ])
+
+      if (dashboardStats.status === 'fulfilled') {
+        const statsData = dashboardStats.value as DashboardStats
+        if (!statsData.monthlyRevenue && cashFlowBalance.status === 'fulfilled') {
+          const balance = cashFlowBalance.value as any
+          statsData.monthlyRevenue = balance?.totalInflow ?? 0
+        }
+        setStats(statsData)
+      } else {
+        message.error('Erro ao carregar dados do dashboard. Tente novamente.')
+      }
+
+      if (chartsResult.status === 'fulfilled' && chartsResult.value) {
+        const raw = chartsResult.value as Partial<ChartData>
+        const fallback = buildFallbackChartData()
+        setChartData({
+          revenue: raw.revenue ?? fallback.revenue,
+          appointmentsByStatus: raw.appointmentsByStatus ?? fallback.appointmentsByStatus,
+          topProducts: raw.topProducts ?? fallback.topProducts,
+          monthlyComparison: raw.monthlyComparison ?? fallback.monthlyComparison,
+        })
+      }
     } finally {
       setLoading(false)
     }
   }
-
-  const { Title, Text } = Typography
-  const { isDark } = useTheme()
 
   if (loading) return <DashboardSkeleton />
 
@@ -75,127 +150,155 @@ export default function Dashboard() {
   const elevatedBg = isDark ? '#1f2937' : '#f9fafb'
   const borderColor = isDark ? '#374151' : '#e5e7eb'
 
-  if (loading) return <DashboardSkeleton />
-
   return (
     <div>
       <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          {/* Welcome Section */}
-          <div
-            style={{
-              background: surfaceBg,
-              borderLeft: '4px solid #16a34a',
-              borderRadius: 8,
-              padding: '24px',
-              boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
-            }}
-          >
+        {/* Welcome Section */}
+        <div
+          style={{
+            background: surfaceBg,
+            borderLeft: '4px solid #16a34a',
+            borderRadius: 8,
+            padding: '24px',
+            boxShadow: '0 1px 2px 0 rgb(0 0 0 / 0.05)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div>
             <Title level={3} style={{ color: textPrimary, margin: 0, fontSize: '24px' }}>
               Bem-vindo ao Dashboard
             </Title>
             <Text style={{ color: textSecondary, fontSize: 16 }}>
-              Olá, {user?.name}! Aqui você pode acompanhar o desempenho do seu petshop.
+              Ola, {user?.name}! Aqui voce pode acompanhar o desempenho do seu petshop.
             </Text>
           </div>
+          <Button icon={<ReloadOutlined />} onClick={loadDashboardData}>
+            Atualizar
+          </Button>
+        </div>
 
-          {/* Stats Cards */}
-          <Row gutter={[16, 16]}>
-            <Col xs={24} sm={12} lg={6}>
-              <Card className="hover:shadow-md transition-shadow">
-                <Statistic
-                  title="Total de Clientes"
-                  value={stats?.totalCustomers || 0}
-                  prefix={<UserOutlined style={{ color: '#059669' }} />}
-                  valueStyle={{ color: '#059669' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Card className="hover:shadow-md transition-shadow">
-                <Statistic
-                  title="Total de Pets"
-                  value={stats?.totalPets || 0}
-                  prefix={<HeartOutlined style={{ color: '#10b981' }} />}
-                  valueStyle={{ color: '#10b981' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Card className="hover:shadow-md transition-shadow">
-                <Statistic
-                  title="Agendamentos"
-                  value={stats?.totalAppointments || 0}
-                  prefix={<CalendarOutlined style={{ color: '#047857' }} />}
-                  valueStyle={{ color: '#047857' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Card className="hover:shadow-md transition-shadow">
-                <Statistic
-                  title="Receita do Mês"
-                  value={stats?.monthlyRevenue || 0}
-                  prefix="R$"
-                  precision={2}
-                  valueStyle={{ color: '#065f46' }}
-                />
-              </Card>
-            </Col>
-          </Row>
+        {/* Stats Cards */}
+        <Row gutter={[16, 16]}>
+          <Col xs={24} sm={12} lg={6}>
+            <Card className="hover:shadow-md transition-shadow">
+              <Statistic
+                title="Total de Clientes"
+                value={stats?.totalCustomers || 0}
+                prefix={<UserOutlined style={{ color: '#059669' }} />}
+                valueStyle={{ color: '#059669' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card className="hover:shadow-md transition-shadow">
+              <Statistic
+                title="Total de Pets"
+                value={stats?.totalPets || 0}
+                prefix={<HeartOutlined style={{ color: '#10b981' }} />}
+                valueStyle={{ color: '#10b981' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card className="hover:shadow-md transition-shadow">
+              <Statistic
+                title="Agendamentos"
+                value={stats?.totalAppointments || 0}
+                prefix={<CalendarOutlined style={{ color: '#047857' }} />}
+                valueStyle={{ color: '#047857' }}
+              />
+            </Card>
+          </Col>
+          <Col xs={24} sm={12} lg={6}>
+            <Card className="hover:shadow-md transition-shadow">
+              <Statistic
+                title="Receita do Mes"
+                value={stats?.monthlyRevenue || 0}
+                prefix={<DollarOutlined style={{ color: '#065f46' }} />}
+                precision={2}
+                valueStyle={{ color: '#065f46' }}
+                formatter={(val) =>
+                  `R$ ${Number(val).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                }
+              />
+            </Card>
+          </Col>
+        </Row>
 
-          {/* Recent Activity */}
-          <Card
-            title="Atividade Recente"
-            className="shadow-sm"
-            styles={{
-              header: {
-                backgroundColor: elevatedBg,
-                borderBottom: `1px solid ${borderColor}`,
-                color: textPrimary,
-              },
-              body: {
-                backgroundColor: surfaceBg,
-              },
-            }}
-          >
-            <List
-              dataSource={stats?.recentActivity || []}
-              locale={{ emptyText: <EmptyState title="Nenhuma atividade recente" compact /> }}
-              renderItem={(activity) => (
-                <List.Item
-                  style={{
-                    borderBottomColor: borderColor,
-                    cursor: 'default',
-                  }}
-                  className="transition-colors"
-                  onMouseEnter={e => (e.currentTarget.style.background = elevatedBg)}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                >
-                  <List.Item.Meta
-                    avatar={
-                      <Avatar
-                        style={{
-                          backgroundColor: activity.type === 'customer' ? '#059669' :
-                                           activity.type === 'pet' ? '#10b981' : '#047857'
-                        }}
-                      >
-                        {activity.type === 'customer' ? <UserOutlined /> :
-                         activity.type === 'pet' ? <HeartOutlined /> : <CalendarOutlined />}
-                      </Avatar>
-                    }
-                    title={<span style={{ color: textPrimary }}>{activity.description}</span>}
-                    description={
-                      <span style={{ color: textSecondary }}>
-                        {new Date(activity.date).toLocaleDateString('pt-BR')}
-                      </span>
-                    }
-                  />
-                </List.Item>
-              )}
-            />
-          </Card>
-        </Space>
+        {/* Charts Row 1: Receita 30 dias + Agendamentos por Status */}
+        <Row gutter={[16, 16]}>
+          <Col xs={24} lg={14}>
+            <RevenueChart data={chartData.revenue} />
+          </Col>
+          <Col xs={24} lg={10}>
+            <AppointmentsPieChart data={chartData.appointmentsByStatus} />
+          </Col>
+        </Row>
+
+        {/* Charts Row 2: Top Produtos + Comparativo Mensal */}
+        <Row gutter={[16, 16]}>
+          <Col xs={24} lg={12}>
+            <TopProductsChart data={chartData.topProducts} />
+          </Col>
+          <Col xs={24} lg={12}>
+            <MonthlyComparisonChart data={chartData.monthlyComparison} />
+          </Col>
+        </Row>
+
+        {/* Recent Activity */}
+        <Card
+          title="Atividade Recente"
+          className="shadow-sm"
+          styles={{
+            header: {
+              backgroundColor: elevatedBg,
+              borderBottom: `1px solid ${borderColor}`,
+              color: textPrimary,
+            },
+            body: {
+              backgroundColor: surfaceBg,
+            },
+          }}
+        >
+          <List
+            dataSource={stats?.recentActivity || []}
+            locale={{ emptyText: <EmptyState title="Nenhuma atividade recente" compact /> }}
+            renderItem={(activity) => (
+              <List.Item
+                style={{
+                  borderBottomColor: borderColor,
+                  cursor: 'default',
+                }}
+                className="transition-colors"
+                onMouseEnter={e => (e.currentTarget.style.background = elevatedBg)}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+              >
+                <List.Item.Meta
+                  avatar={
+                    <Avatar
+                      style={{
+                        backgroundColor: activity.type === 'customer' ? '#059669' :
+                                         activity.type === 'pet' ? '#10b981' : '#047857'
+                      }}
+                    >
+                      {activity.type === 'customer' ? <UserOutlined /> :
+                       activity.type === 'pet' ? <HeartOutlined /> : <CalendarOutlined />}
+                    </Avatar>
+                  }
+                  title={<span style={{ color: textPrimary }}>{activity.description}</span>}
+                  description={
+                    <span style={{ color: textSecondary }}>
+                      {new Date(activity.date).toLocaleDateString('pt-BR')}
+                    </span>
+                  }
+                />
+              </List.Item>
+            )}
+          />
+        </Card>
+      </Space>
     </div>
   )
 }
-

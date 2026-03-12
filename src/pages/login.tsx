@@ -42,8 +42,7 @@ export default function Login() {
         // Redirecionar para dashboard
         router.push('/dashboard')
       } else {
-        const errorData = await response.json()
-        message.error(errorData.message || 'Credenciais inválidas')
+        message.error('Email ou senha incorretos')
       }
     } catch (error) {
       message.error('Erro de conexão. Tente novamente.')

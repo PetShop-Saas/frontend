@@ -8,8 +8,18 @@ interface PageContainerProps {
 
 export default function PageContainer({ children, loading = false }: PageContainerProps) {
   return (
-    <Spin spinning={loading} size="large">
-      <div className={`transition-opacity duration-300 ${loading ? 'opacity-50' : 'opacity-100'}`}>
+    <Spin
+      spinning={loading}
+      size="large"
+      tip="Carregando..."
+      style={{ color: 'var(--primary-color)' } as React.CSSProperties}
+    >
+      <div
+        style={{
+          opacity: loading ? 0.45 : 1,
+          transition: 'opacity 0.25s ease',
+        }}
+      >
         {children}
       </div>
     </Spin>

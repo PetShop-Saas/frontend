@@ -1,32 +1,47 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { 
-  Card, 
-  Button, 
-  message, 
-  Space, 
-  Typography, 
+import {
+  Card,
+  Button,
+  message,
   Switch,
-  Divider,
-  Spin,
   Alert
 } from 'antd'
-import { 
-  SettingOutlined, 
-  SaveOutlined, 
+import {
+  SettingOutlined,
+  SaveOutlined,
   BellOutlined,
   MailOutlined,
-  InfoCircleOutlined 
+  InfoCircleOutlined
 } from '@ant-design/icons'
 import { apiService } from '../services/api'
-
-const { Title, Text } = Typography
+import PageHeader from '../components/common/PageHeader'
+import PageSkeleton from '../components/common/PageSkeleton'
 
 interface UserPreferences {
   enableNotifications: boolean
   enableEmailNotifications: boolean
   enablePushNotifications: boolean
   emailMarketing: boolean
+}
+
+const sectionTitleStyle: React.CSSProperties = {
+  fontSize: 13,
+  fontWeight: 700,
+  color: 'var(--text-secondary)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.06em',
+  marginBottom: 10,
+}
+
+const switchRowStyle: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  padding: '14px 16px',
+  borderRadius: 10,
+  border: '1px solid var(--border-color)',
+  background: 'var(--bg-elevated)',
 }
 
 export default function UserPreferences() {
@@ -43,7 +58,7 @@ export default function UserPreferences() {
   useEffect(() => {
     const token = localStorage.getItem('token')
     const user = localStorage.getItem('user')
-    
+
     if (!token || !user) {
       message.error('Você precisa estar logado para acessar as preferências')
       router.push('/login')
@@ -57,10 +72,9 @@ export default function UserPreferences() {
   const loadPreferences = async () => {
     try {
       setLoading(true)
-      
-      // Carregar preferências do usuário do backend
+
       const userPreferences = await apiService.getUserPreferences() as any
-      
+
       if (userPreferences) {
         setPreferences({
           enableNotifications: userPreferences.enableNotifications ?? true,
@@ -69,7 +83,6 @@ export default function UserPreferences() {
           emailMarketing: userPreferences.emailMarketing ?? false
         })
       } else {
-        // Valores padrão
         setPreferences({
           enableNotifications: true,
           enableEmailNotifications: true,
@@ -79,12 +92,10 @@ export default function UserPreferences() {
       }
     } catch (error) {
       console.error('Erro ao carregar preferências:', error)
-      // Tentar carregar do localStorage como fallback
       const savedPreferences = localStorage.getItem('userPreferences')
       if (savedPreferences) {
         setPreferences(JSON.parse(savedPreferences))
       } else {
-        // Valores padrão em caso de erro
         setPreferences({
           enableNotifications: true,
           enableEmailNotifications: true,
@@ -100,13 +111,11 @@ export default function UserPreferences() {
   const handleSave = async () => {
     try {
       setSaving(true)
-      
-      // Salvar preferências do usuário no backend
+
       await apiService.updateUserPreferences(preferences)
-      
-      // Também salvar no localStorage como backup
+
       localStorage.setItem('userPreferences', JSON.stringify(preferences))
-      
+
       message.success('Preferências salvas com sucesso!')
     } catch (error) {
       console.error('Erro ao salvar preferências:', error)
@@ -116,197 +125,189 @@ export default function UserPreferences() {
     }
   }
 
-  if (loading) {
-    return (
-      <div>
-        <div className="p-6">
-          <div className="flex items-center justify-center min-h-screen">
-            <Spin size="large" />
-          </div>
-        </div>
-      </div>
-    )
-  }
+  if (loading) return <PageSkeleton type="detail" />
 
   return (
     <div>
-      <div className="p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Minhas Preferências</h1>
-          <p className="text-gray-600">Gerencie suas preferências pessoais e notificações</p>
-        </div>
+      <PageHeader
+        title="Preferências"
+        subtitle="Gerencie suas preferências pessoais e notificações"
+        breadcrumb={[{ label: 'Preferências' }]}
+        actions={
+          <Button
+            type="primary"
+            icon={<SaveOutlined />}
+            onClick={handleSave}
+            loading={saving}
+          >
+            Salvar Preferências
+          </Button>
+        }
+      />
 
-        <Card>
-          <div className="mb-4 flex justify-between items-center">
-            <div className="flex items-center space-x-2">
-              <SettingOutlined className="text-green-600 text-xl" />
-              <Title level={4} className="mb-0">Preferências de Notificações</Title>
-            </div>
-            
-            <Button
-              type="primary"
-              icon={<SaveOutlined />}
-              onClick={handleSave}
-              loading={saving}
-              className="bg-green-600 hover:bg-green-700 hover:border-green-700 border-green-600 px-6 py-3"
-              style={{
-                backgroundColor: '#16a34a',
-                borderColor: '#16a34a'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#15803d'
-                e.currentTarget.style.borderColor = '#15803d'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#16a34a'
-                e.currentTarget.style.borderColor = '#16a34a'
-              }}
-              size="large"
-            >
-              Salvar Preferências
-            </Button>
-          </div>
+      <div style={{ padding: '0 24px 24px' }}>
+        <Alert
+          message="Informação"
+          description="Essas configurações afetam apenas você. As configurações do sistema são gerenciadas pelo administrador."
+          type="info"
+          icon={<InfoCircleOutlined />}
+          showIcon
+          style={{ marginBottom: 20 }}
+        />
 
-          <Alert
-            message="Informação"
-            description="Essas configurações afetam apenas você. As configurações do sistema são gerenciadas pelo administrador."
-            type="info"
-            icon={<InfoCircleOutlined />}
-            className="mb-6"
-          />
-
-          <div className="space-y-6">
-            {/* Notificações Gerais */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center space-x-3 mb-4">
-                <BellOutlined className="text-green-600 text-xl" />
-                <div>
-                  <Text strong className="text-base">Notificações Gerais</Text>
-                  <div className="text-sm text-gray-500">
-                    Ative ou desative todas as notificações do sistema
-                  </div>
-                </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Notificações Gerais */}
+          <Card bodyStyle={{ padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <div style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: 'rgba(16,185,129,0.12)',
+                color: '#10b981',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 16,
+              }}>
+                <BellOutlined />
               </div>
-              <div className="flex items-center justify-between">
+              <div>
+                <p style={sectionTitleStyle}>Notificações Gerais</p>
+                <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: 0 }}>
+                  Ative ou desative todas as notificações do sistema
+                </p>
+              </div>
+            </div>
+
+            <div style={switchRowStyle}>
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+                  Receber Notificações
+                </p>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+                  Ative para receber notificações do sistema
+                </p>
+              </div>
+              <Switch
+                checked={preferences.enableNotifications}
+                onChange={(checked) => setPreferences({ ...preferences, enableNotifications: checked })}
+              />
+            </div>
+          </Card>
+
+          {/* Notificações por Email */}
+          <Card bodyStyle={{ padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <div style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: 'rgba(16,185,129,0.12)',
+                color: '#10b981',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 16,
+              }}>
+                <MailOutlined />
+              </div>
+              <div>
+                <p style={sectionTitleStyle}>Notificações por Email</p>
+                <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: 0 }}>
+                  Configure como você deseja receber notificações por email
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={switchRowStyle}>
                 <div>
-                  <Text strong>Receber Notificações</Text>
-                  <div className="text-sm text-gray-500">
-                    Ative para receber notificações do sistema
-                  </div>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+                    Notificações por Email
+                  </p>
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+                    Receba notificações importantes por email
+                  </p>
                 </div>
                 <Switch
-                  checked={preferences.enableNotifications}
-                  onChange={(checked) => setPreferences({...preferences, enableNotifications: checked})}
-                  size="default"
-                />
-              </div>
-            </div>
-
-            <Divider />
-
-            {/* Notificações por Email */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center space-x-3 mb-4">
-                <MailOutlined className="text-green-600 text-xl" />
-                <div>
-                  <Text strong className="text-base">Notificações por Email</Text>
-                  <div className="text-sm text-gray-500">
-                    Configure como você deseja receber notificações por email
-                  </div>
-                </div>
-              </div>
-              
-              <Space direction="vertical" className="w-full" size="middle">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Text strong>Notificações por Email</Text>
-                    <div className="text-sm text-gray-500">
-                      Receba notificações importantes por email
-                    </div>
-                  </div>
-                  <Switch
-                    checked={preferences.enableEmailNotifications}
-                    onChange={(checked) => setPreferences({...preferences, enableEmailNotifications: checked})}
-                    disabled={!preferences.enableNotifications}
-                    size="default"
-                  />
-                </div>
-                
-                <Divider className="my-2" />
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Text strong>Marketing por Email</Text>
-                    <div className="text-sm text-gray-500">
-                      Receba emails promocionais e novidades do sistema
-                    </div>
-                  </div>
-                  <Switch
-                    checked={preferences.emailMarketing}
-                    onChange={(checked) => setPreferences({...preferences, emailMarketing: checked})}
-                    disabled={!preferences.enableNotifications}
-                    size="default"
-                  />
-                </div>
-              </Space>
-            </div>
-
-            <Divider />
-
-            {/* Notificações Push */}
-            <div className="border border-gray-200 rounded-lg p-4">
-              <div className="flex items-center space-x-3 mb-4">
-                <BellOutlined className="text-green-600 text-xl" />
-                <div>
-                  <Text strong className="text-base">Notificações Push</Text>
-                  <div className="text-sm text-gray-500">
-                    Receba notificações em tempo real no navegador
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Text strong>Ativar Notificações Push</Text>
-                  <div className="text-sm text-gray-500">
-                    Permita que o sistema envie notificações push no navegador
-                  </div>
-                </div>
-                <Switch
-                  checked={preferences.enablePushNotifications}
-                  onChange={(checked) => setPreferences({...preferences, enablePushNotifications: checked})}
+                  checked={preferences.enableEmailNotifications}
+                  onChange={(checked) => setPreferences({ ...preferences, enableEmailNotifications: checked })}
                   disabled={!preferences.enableNotifications}
-                  size="default"
+                />
+              </div>
+
+              <div style={switchRowStyle}>
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+                    Marketing por Email
+                  </p>
+                  <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+                    Receba emails promocionais e novidades do sistema
+                  </p>
+                </div>
+                <Switch
+                  checked={preferences.emailMarketing}
+                  onChange={(checked) => setPreferences({ ...preferences, emailMarketing: checked })}
+                  disabled={!preferences.enableNotifications}
                 />
               </div>
             </div>
-          </div>
+          </Card>
 
-          <div className="mt-6 flex justify-end space-x-2">
+          {/* Notificações Push */}
+          <Card bodyStyle={{ padding: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <div style={{
+                width: 36,
+                height: 36,
+                borderRadius: 10,
+                background: 'rgba(16,185,129,0.12)',
+                color: '#10b981',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: 16,
+              }}>
+                <BellOutlined />
+              </div>
+              <div>
+                <p style={sectionTitleStyle}>Notificações Push</p>
+                <p style={{ fontSize: 12, color: 'var(--text-tertiary)', margin: 0 }}>
+                  Receba notificações em tempo real no navegador
+                </p>
+              </div>
+            </div>
+
+            <div style={switchRowStyle}>
+              <div>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>
+                  Ativar Notificações Push
+                </p>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+                  Permita que o sistema envie notificações push no navegador
+                </p>
+              </div>
+              <Switch
+                checked={preferences.enablePushNotifications}
+                onChange={(checked) => setPreferences({ ...preferences, enablePushNotifications: checked })}
+                disabled={!preferences.enableNotifications}
+              />
+            </div>
+          </Card>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Button
               type="primary"
               icon={<SaveOutlined />}
               onClick={handleSave}
               loading={saving}
-              className="bg-green-600 hover:bg-green-700 border-green-600 px-6 py-2"
-              style={{
-                backgroundColor: '#16a34a',
-                borderColor: '#16a34a'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#15803d'
-                e.currentTarget.style.borderColor = '#15803d'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#16a34a'
-                e.currentTarget.style.borderColor = '#16a34a'
-              }}
             >
               Salvar Preferências
             </Button>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   )
 }
-

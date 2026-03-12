@@ -1,12 +1,47 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { Card, Table, Button, Modal, Form, Input, Select, Tag, Space, message, List, Avatar } from 'antd'
-import { PlusOutlined, MessageOutlined, ClockCircleOutlined } from '@ant-design/icons'
+import {
+  Table,
+  Button,
+  Modal,
+  Form,
+  Input,
+  Select,
+  Tag,
+  Space,
+  message,
+  List,
+  Avatar,
+} from 'antd'
+import {
+  PlusOutlined,
+  MessageOutlined,
+  CustomerServiceOutlined,
+  ClockCircleOutlined,
+  SendOutlined,
+  ReloadOutlined,
+} from '@ant-design/icons'
 import { apiService } from '../services/api'
-
+import PageHeader from '../components/common/PageHeader'
+import EmptyState from '../components/common/EmptyState'
+import { PageSkeleton } from '../components/common/PageSkeleton'
 
 const { TextArea } = Input
 const { Option } = Select
+
+const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  OPEN:        { label: 'Aberto',      color: '#3b82f6', bg: 'rgba(59,130,246,0.1)' },
+  IN_PROGRESS: { label: 'Em Andamento', color: '#d97706', bg: 'rgba(217,119,6,0.1)' },
+  RESOLVED:    { label: 'Resolvido',   color: '#047857', bg: 'rgba(4,120,87,0.1)'  },
+  CLOSED:      { label: 'Fechado',     color: '#6b7280', bg: 'rgba(107,114,128,0.1)' },
+}
+
+const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
+  LOW:    { label: 'Baixa',   color: '#10b981' },
+  MEDIUM: { label: 'Média',   color: '#3b82f6' },
+  HIGH:   { label: 'Alta',    color: '#f59e0b' },
+  URGENT: { label: 'Urgente', color: '#ef4444' },
+}
 
 export default function Tickets() {
   const [tickets, setTickets] = useState<any[]>([])
@@ -26,14 +61,15 @@ export default function Tickets() {
       return
     }
     loadTickets()
-  }, [router])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const loadTickets = async () => {
     try {
       setLoading(true)
       const data = await apiService.getTickets()
       setTickets(data as any)
-    } catch (error) {
+    } catch {
       message.error('Erro ao carregar tickets')
     } finally {
       setLoading(false)
@@ -47,7 +83,7 @@ export default function Tickets() {
       setShowModal(false)
       form.resetFields()
       loadTickets()
-    } catch (error) {
+    } catch {
       message.error('Erro ao criar ticket')
     }
   }
@@ -58,249 +94,408 @@ export default function Tickets() {
       const msgs = await apiService.getTicketMessages(ticket.id)
       setMessages(msgs as any)
       setShowMessagesModal(true)
-    } catch (error) {
+    } catch {
       message.error('Erro ao carregar mensagens')
     }
   }
 
   const sendMessage = async () => {
     if (!newMessage.trim()) return
-
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}')
       await apiService.addTicketMessage(selectedTicket.id, {
         content: newMessage,
         isAdmin: false,
         authorId: user.id,
-        authorName: user.name
+        authorName: user.name,
       })
       setNewMessage('')
       const msgs = await apiService.getTicketMessages(selectedTicket.id)
       setMessages(msgs as any)
       message.success('Mensagem enviada!')
-    } catch (error) {
+    } catch {
       message.error('Erro ao enviar mensagem')
     }
-  }
-
-  const getStatusColor = (status: string) => {
-    const colors: any = {
-      OPEN: 'blue',
-      IN_PROGRESS: 'orange',
-      RESOLVED: 'green',
-      CLOSED: 'default'
-    }
-    return colors[status] || 'default'
-  }
-
-  const getPriorityColor = (priority: string) => {
-    const colors: any = {
-      LOW: 'green',
-      MEDIUM: 'blue',
-      HIGH: 'orange',
-      URGENT: 'red'
-    }
-    return colors[priority] || 'default'
   }
 
   const columns = [
     {
       title: 'Título',
       dataIndex: 'title',
-      key: 'title'
+      key: 'title',
+      render: (text: string) => (
+        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{text}</span>
+      ),
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (status: string) => <Tag color={getStatusColor(status)}>{status}</Tag>
+      render: (status: string) => {
+        const cfg = STATUS_CONFIG[status] ?? { label: status, color: '#6b7280', bg: 'rgba(107,114,128,0.1)' }
+        return (
+          <span style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            padding: '2px 10px',
+            borderRadius: 20,
+            fontSize: 11,
+            fontWeight: 700,
+            color: cfg.color,
+            background: cfg.bg,
+            textTransform: 'uppercase',
+            letterSpacing: '0.04em',
+          }}>
+            {cfg.label}
+          </span>
+        )
+      },
     },
     {
       title: 'Prioridade',
       dataIndex: 'priority',
       key: 'priority',
-      render: (priority: string) => <Tag color={getPriorityColor(priority)}>{priority}</Tag>
+      render: (priority: string) => {
+        const cfg = PRIORITY_CONFIG[priority] ?? { label: priority, color: '#6b7280' }
+        return <Tag color={cfg.color} style={{ fontWeight: 600, fontSize: 11 }}>{cfg.label}</Tag>
+      },
     },
     {
       title: 'Categoria',
       dataIndex: 'category',
-      key: 'category'
+      key: 'category',
+      render: (cat: string) => (
+        <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{cat}</span>
+      ),
     },
     {
       title: 'Criado em',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (date: string) => new Date(date).toLocaleDateString('pt-BR')
+      render: (date: string) => (
+        <span style={{ fontSize: 12, color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <ClockCircleOutlined style={{ fontSize: 11 }} />
+          {new Date(date).toLocaleDateString('pt-BR')}
+        </span>
+      ),
     },
     {
       title: 'Ações',
       key: 'actions',
-      render: (record: any) => (
-        <Button 
-          type="link" 
+      render: (_: any, record: any) => (
+        <Button
+          type="text"
           icon={<MessageOutlined />}
           onClick={() => viewMessages(record)}
+          style={{ color: 'var(--primary-color)', fontWeight: 500, fontSize: 13 }}
         >
-          Ver Mensagens
+          Ver mensagens
         </Button>
-      )
-    }
+      ),
+    },
   ]
+
+  if (loading) return <PageSkeleton />
 
   return (
     <div>
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Suporte - Tickets</h1>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={() => setShowModal(true)}
-          >
-            Novo Ticket
-          </Button>
-        </div>
+      <PageHeader
+        title="Suporte — Tickets"
+        subtitle="Acompanhe e gerencie suas solicitações de suporte"
+        breadcrumb={[{ label: 'Suporte' }]}
+        actions={
+          <>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={loadTickets}
+              loading={loading}
+              style={{
+                height: 36,
+                borderRadius: 8,
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-secondary)',
+                background: 'var(--bg-surface)',
+              }}
+            >
+              Atualizar
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setShowModal(true)}
+              style={{
+                height: 36,
+                borderRadius: 8,
+                background: 'var(--primary-color)',
+                border: 'none',
+                fontWeight: 600,
+              }}
+            >
+              Novo Ticket
+            </Button>
+          </>
+        }
+      />
 
-        <Card>
+      <div style={{ padding: '0 24px 24px' }}>
+        <div style={{
+          background: 'var(--bg-surface)',
+          borderRadius: 12,
+          border: '1px solid var(--border-color)',
+          boxShadow: 'var(--shadow-sm)',
+          overflow: 'hidden',
+        }}>
           <Table
             dataSource={tickets}
             columns={columns}
             rowKey="id"
             loading={loading}
+            scroll={{ x: 'max-content' }}
+            pagination={{
+              pageSize: 10,
+              showSizeChanger: true,
+              showTotal: (total: number) => `${total} tickets`,
+              style: { padding: '12px 16px' },
+            }}
+            locale={{
+              emptyText: (
+                <EmptyState
+                  icon={<CustomerServiceOutlined style={{ fontSize: 32 }} />}
+                  title="Nenhum ticket encontrado"
+                  description="Abra um novo ticket para receber suporte"
+                  actionLabel="Novo Ticket"
+                  onAction={() => setShowModal(true)}
+                />
+              ),
+            }}
           />
-        </Card>
+        </div>
+      </div>
 
-        <Modal
-          title="Criar Novo Ticket"
-          open={showModal}
-          onCancel={() => setShowModal(false)}
-          footer={null}
-          width={600}
-        >
-          <Form form={form} layout="vertical" onFinish={handleCreateTicket}>
-            <Form.Item 
-              name="title" 
-              label="Título"
-              rules={[{ required: true, message: 'Digite o título' }]}
-            >
-              <Input placeholder="Descreva brevemente o problema" />
-            </Form.Item>
-
-            <Form.Item 
-              name="category" 
-              label="Categoria"
-              rules={[{ required: true, message: 'Selecione a categoria' }]}
-            >
-              <Select placeholder="Selecione">
-                <Option value="BILLING">Cobrança/Pagamento</Option>
-                <Option value="TECHNICAL">Problema Técnico</Option>
-                <Option value="FEATURE_REQUEST">Sugestão de Funcionalidade</Option>
-                <Option value="BUG">Reportar Bug</Option>
-                <Option value="OTHER">Outro</Option>
-              </Select>
-            </Form.Item>
-
-            <Form.Item 
-              name="priority" 
-              label="Prioridade"
-              rules={[{ required: true, message: 'Selecione a prioridade' }]}
-              initialValue="MEDIUM"
-            >
-              <Select placeholder="Selecione">
-                <Option value="LOW">Baixa</Option>
-                <Option value="MEDIUM">Média</Option>
-                <Option value="HIGH">Alta</Option>
-                <Option value="URGENT">Urgente</Option>
-              </Select>
-            </Form.Item>
-
-            <Form.Item 
-              name="description" 
-              label="Descrição"
-              rules={[{ required: true, message: 'Descreva o problema' }]}
-            >
-              <TextArea 
-                rows={6} 
-                placeholder="Descreva detalhadamente o problema ou solicitação..."
-              />
-            </Form.Item>
-
-            <Form.Item>
-              <Space>
-                <Button type="primary" htmlType="submit">
-                  Criar Ticket
-                </Button>
-                <Button onClick={() => setShowModal(false)}>
-                  Cancelar
-                </Button>
-              </Space>
-            </Form.Item>
-          </Form>
-        </Modal>
-
-        <Modal
-          title={`Ticket: ${selectedTicket?.title}`}
-          open={showMessagesModal}
-          onCancel={() => setShowMessagesModal(false)}
-          footer={null}
-          width={700}
-        >
-          <div className="mb-4">
-            <Space>
-              <Tag color={getStatusColor(selectedTicket?.status)}>{selectedTicket?.status}</Tag>
-              <Tag color={getPriorityColor(selectedTicket?.priority)}>{selectedTicket?.priority}</Tag>
-              <Tag>{selectedTicket?.category}</Tag>
-            </Space>
-            <p className="mt-2 text-gray-600">{selectedTicket?.description}</p>
+      {/* Modal: Criar Ticket */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <CustomerServiceOutlined style={{ color: 'var(--primary-color)' }} />
+            <span style={{ fontFamily: 'var(--display-family)', fontWeight: 700 }}>
+              Criar Novo Ticket
+            </span>
           </div>
+        }
+        open={showModal}
+        onCancel={() => { setShowModal(false); form.resetFields() }}
+        footer={null}
+        width={580}
+      >
+        <Form form={form} layout="vertical" onFinish={handleCreateTicket} style={{ marginTop: 16 }}>
+          <Form.Item
+            name="title"
+            label="Título"
+            rules={[{ required: true, message: 'Digite o título' }]}
+          >
+            <Input placeholder="Descreva brevemente o problema" style={{ borderRadius: 8 }} />
+          </Form.Item>
 
-          <div className="border-t pt-4 mb-4" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+          <Form.Item
+            name="category"
+            label="Categoria"
+            rules={[{ required: true, message: 'Selecione a categoria' }]}
+          >
+            <Select placeholder="Selecione a categoria" style={{ borderRadius: 8 }}>
+              <Option value="BILLING">Cobrança / Pagamento</Option>
+              <Option value="TECHNICAL">Problema Técnico</Option>
+              <Option value="FEATURE_REQUEST">Sugestão de Funcionalidade</Option>
+              <Option value="BUG">Reportar Bug</Option>
+              <Option value="OTHER">Outro</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="priority"
+            label="Prioridade"
+            initialValue="MEDIUM"
+            rules={[{ required: true, message: 'Selecione a prioridade' }]}
+          >
+            <Select placeholder="Selecione a prioridade" style={{ borderRadius: 8 }}>
+              <Option value="LOW">Baixa</Option>
+              <Option value="MEDIUM">Média</Option>
+              <Option value="HIGH">Alta</Option>
+              <Option value="URGENT">Urgente</Option>
+            </Select>
+          </Form.Item>
+
+          <Form.Item
+            name="description"
+            label="Descrição"
+            rules={[{ required: true, message: 'Descreva o problema' }]}
+          >
+            <TextArea
+              rows={5}
+              placeholder="Descreva detalhadamente o problema ou solicitação..."
+              style={{ borderRadius: 8 }}
+            />
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Space>
+              <Button
+                type="primary"
+                htmlType="submit"
+                style={{ background: 'var(--primary-color)', border: 'none', borderRadius: 8, fontWeight: 600 }}
+              >
+                Criar Ticket
+              </Button>
+              <Button
+                onClick={() => { setShowModal(false); form.resetFields() }}
+                style={{ borderRadius: 8 }}
+              >
+                Cancelar
+              </Button>
+            </Space>
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal: Ver Mensagens */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <MessageOutlined style={{ color: 'var(--primary-color)' }} />
+              <span style={{ fontFamily: 'var(--display-family)', fontWeight: 700, fontSize: 15 }}>
+                {selectedTicket?.title}
+              </span>
+            </div>
+            <Space size={6} wrap>
+              {selectedTicket?.status && (() => {
+                const s = STATUS_CONFIG[selectedTicket.status]
+                return s ? (
+                  <span style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '2px 8px',
+                    borderRadius: 20,
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: s.color,
+                    background: s.bg,
+                  }}>
+                    {s.label}
+                  </span>
+                ) : null
+              })()}
+              {selectedTicket?.priority && (
+                <Tag
+                  color={PRIORITY_CONFIG[selectedTicket.priority]?.color}
+                  style={{ fontWeight: 600, fontSize: 11 }}
+                >
+                  {PRIORITY_CONFIG[selectedTicket.priority]?.label ?? selectedTicket.priority}
+                </Tag>
+              )}
+              {selectedTicket?.category && (
+                <Tag style={{ fontSize: 11 }}>{selectedTicket.category}</Tag>
+              )}
+            </Space>
+          </div>
+        }
+        open={showMessagesModal}
+        onCancel={() => setShowMessagesModal(false)}
+        footer={null}
+        width={680}
+      >
+        {selectedTicket?.description && (
+          <p style={{
+            fontSize: 13,
+            color: 'var(--text-secondary)',
+            background: 'var(--bg-elevated)',
+            borderRadius: 8,
+            padding: '10px 14px',
+            marginBottom: 16,
+            border: '1px solid var(--border-subtle)',
+          }}>
+            {selectedTicket.description}
+          </p>
+        )}
+
+        <div style={{
+          borderTop: '1px solid var(--border-color)',
+          paddingTop: 16,
+          marginBottom: 16,
+          maxHeight: 380,
+          overflowY: 'auto',
+        }}>
+          {messages.length > 0 ? (
             <List
               dataSource={messages}
               renderItem={(msg: any) => (
-                <List.Item>
+                <List.Item style={{ padding: '8px 0', border: 'none' }}>
                   <List.Item.Meta
-                    avatar={<Avatar>{msg.authorName.charAt(0)}</Avatar>}
+                    avatar={
+                      <Avatar
+                        style={{
+                          background: msg.isAdmin ? '#047857' : 'rgba(4,120,87,0.15)',
+                          color: msg.isAdmin ? '#fff' : '#047857',
+                          fontWeight: 700,
+                        }}
+                      >
+                        {msg.authorName?.charAt(0)?.toUpperCase()}
+                      </Avatar>
+                    }
                     title={
-                      <Space>
-                        <span>{msg.authorName}</span>
-                        {msg.isAdmin && <Tag color="red">Suporte</Tag>}
-                        <span className="text-xs text-gray-400">
+                      <Space size={6}>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+                          {msg.authorName}
+                        </span>
+                        {msg.isAdmin && (
+                          <Tag color="green" style={{ fontWeight: 700, fontSize: 10 }}>Suporte</Tag>
+                        )}
+                        <span style={{ fontSize: 11, color: 'var(--text-tertiary)' }}>
                           {new Date(msg.createdAt).toLocaleString('pt-BR')}
                         </span>
                       </Space>
                     }
-                    description={msg.content}
+                    description={
+                      <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{msg.content}</span>
+                    }
                   />
                 </List.Item>
               )}
             />
-          </div>
-
-          {selectedTicket?.status !== 'CLOSED' && (
-            <div className="border-t pt-4">
-              <TextArea
-                rows={3}
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                placeholder="Digite sua mensagem..."
-              />
-              <Button 
-                type="primary" 
-                className="mt-2"
-                onClick={sendMessage}
-                disabled={!newMessage.trim()}
-              >
-                Enviar Mensagem
-              </Button>
-            </div>
+          ) : (
+            <EmptyState
+              icon={<MessageOutlined style={{ fontSize: 24 }} />}
+              title="Sem mensagens ainda"
+              compact
+            />
           )}
-        </Modal>
-      </div>
+        </div>
+
+        {selectedTicket?.status !== 'CLOSED' && (
+          <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: 16 }}>
+            <TextArea
+              rows={3}
+              value={newMessage}
+              onChange={e => setNewMessage(e.target.value)}
+              placeholder="Digite sua mensagem..."
+              style={{ borderRadius: 8, marginBottom: 10 }}
+            />
+            <Button
+              type="primary"
+              icon={<SendOutlined />}
+              onClick={sendMessage}
+              disabled={!newMessage.trim()}
+              style={{
+                background: 'var(--primary-color)',
+                border: 'none',
+                borderRadius: 8,
+                fontWeight: 600,
+              }}
+            >
+              Enviar Mensagem
+            </Button>
+          </div>
+        )}
+      </Modal>
     </div>
   )
 }
-
-
-
-

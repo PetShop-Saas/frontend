@@ -1,6 +1,25 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
+import { Button, Select, Card, Row, Col } from 'antd'
+import {
+  BarChartOutlined,
+  DownloadOutlined,
+  ReloadOutlined,
+  TeamOutlined,
+  HeartOutlined,
+  CalendarOutlined,
+  DollarOutlined,
+  ClockCircleOutlined,
+  UserAddOutlined,
+  ShoppingCartOutlined,
+} from '@ant-design/icons'
 import { apiService } from '../services/api'
+import PageHeader from '../components/common/PageHeader'
+import StatsCard from '../components/common/StatsCard'
+import EmptyState from '../components/common/EmptyState'
+import { PageSkeleton } from '../components/common/PageSkeleton'
+
+const { Option } = Select
 
 interface ReportData {
   totalCustomers: number
@@ -9,6 +28,13 @@ interface ReportData {
   totalSales: number
   monthlyRevenue: number
   recentActivity: Array<{ type: string; description: string; date: string }>
+}
+
+const activityIconMap: Record<string, { icon: React.ReactNode; color: string; bg: string }> = {
+  customer: { icon: <UserAddOutlined />, color: '#047857', bg: 'rgba(4,120,87,0.1)' },
+  pet: { icon: <HeartOutlined />, color: '#0d9488', bg: 'rgba(13,148,136,0.1)' },
+  appointment: { icon: <CalendarOutlined />, color: '#7c3aed', bg: 'rgba(124,58,237,0.1)' },
+  sale: { icon: <ShoppingCartOutlined />, color: '#d97706', bg: 'rgba(217,119,6,0.1)' },
 }
 
 export default function Reports() {
@@ -23,165 +49,258 @@ export default function Reports() {
       router.push('/login')
       return
     }
-
     loadReportData()
-  }, [router])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const loadReportData = async () => {
     try {
+      setLoading(true)
       const stats = await apiService.getDashboardStats()
       setReportData(stats as any)
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false)
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
-          <p className="mt-4 text-gray-600">Carregando...</p>
-        </div>
-      </div>
-    )
-  }
+  if (loading) return <PageSkeleton />
+
+  const statsCards = [
+    {
+      key: 'customers',
+      title: 'Total de Clientes',
+      value: reportData?.totalCustomers ?? 0,
+      icon: <TeamOutlined />,
+      iconColor: '#047857',
+    },
+    {
+      key: 'pets',
+      title: 'Total de Pets',
+      value: reportData?.totalPets ?? 0,
+      icon: <HeartOutlined />,
+      iconColor: '#0d9488',
+    },
+    {
+      key: 'appointments',
+      title: 'Agendamentos',
+      value: reportData?.totalAppointments ?? 0,
+      icon: <CalendarOutlined />,
+      iconColor: '#7c3aed',
+    },
+    {
+      key: 'revenue',
+      title: 'Receita Mensal',
+      value: `R$ ${(reportData?.monthlyRevenue ?? 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
+      icon: <DollarOutlined />,
+      iconColor: '#d97706',
+    },
+  ]
 
   return (
     <div>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Relatórios</h1>
-            <p className="text-gray-600">Análise e estatísticas do seu petshop</p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <select
+      <PageHeader
+        title="Relatórios"
+        subtitle="Análise e estatísticas do seu petshop"
+        breadcrumb={[{ label: 'Relatórios' }]}
+        actions={
+          <>
+            <Select
               value={selectedPeriod}
-              onChange={(e) => setSelectedPeriod(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-green-500"
+              onChange={setSelectedPeriod}
+              style={{ width: 160, height: 36 }}
             >
-              <option value="7">Últimos 7 dias</option>
-              <option value="30">Últimos 30 dias</option>
-              <option value="90">Últimos 90 dias</option>
-              <option value="365">Último ano</option>
-            </select>
-            <button className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center">
-              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
+              <Option value="7">Últimos 7 dias</Option>
+              <Option value="30">Últimos 30 dias</Option>
+              <Option value="90">Últimos 90 dias</Option>
+              <Option value="365">Último ano</Option>
+            </Select>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={loadReportData}
+              loading={loading}
+              style={{
+                height: 36,
+                borderRadius: 8,
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-secondary)',
+                background: 'var(--bg-surface)',
+              }}
+            >
+              Atualizar
+            </Button>
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              style={{
+                height: 36,
+                borderRadius: 8,
+                background: 'var(--primary-color)',
+                border: 'none',
+                fontWeight: 600,
+              }}
+            >
               Exportar
-            </button>
-          </div>
-        </div>
+            </Button>
+          </>
+        }
+      />
 
-        {/* Key Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total de Clientes</p>
-                <p className="text-2xl font-semibold text-gray-900">{reportData?.totalCustomers}</p>
-              </div>
-            </div>
-          </div>
+      <div style={{ padding: '0 24px 24px' }}>
+        {/* KPI Cards */}
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          {statsCards.map(card => (
+            <Col key={card.key} xs={24} sm={12} lg={6}>
+              <StatsCard
+                title={card.title}
+                value={card.value}
+                icon={card.icon}
+                iconColor={card.iconColor}
+                accent={card.iconColor}
+              />
+            </Col>
+          ))}
+        </Row>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Total de Pets</p>
-                <p className="text-2xl font-semibold text-gray-900">{reportData?.totalPets}</p>
-              </div>
-            </div>
-          </div>
+        <Row gutter={[16, 16]}>
+          {/* Atividade Recente */}
+          <Col xs={24} lg={12}>
+            <Card
+              title={
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <ClockCircleOutlined style={{ color: 'var(--primary-color)', fontSize: 16 }} />
+                  <span style={{ fontFamily: 'var(--display-family)', fontWeight: 700 }}>
+                    Atividade Recente
+                  </span>
+                </div>
+              }
+              style={{ height: '100%' }}
+            >
+              {reportData?.recentActivity && reportData.recentActivity.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {reportData.recentActivity.map((activity, index) => {
+                    const config = activityIconMap[activity.type] ?? activityIconMap.customer
+                    return (
+                      <div
+                        key={index}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 12,
+                          padding: '10px 12px',
+                          borderRadius: 10,
+                          background: 'var(--bg-elevated)',
+                          border: '1px solid var(--border-subtle)',
+                        }}
+                      >
+                        <div style={{
+                          width: 36,
+                          height: 36,
+                          borderRadius: 9,
+                          background: config.bg,
+                          color: config.color,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: 15,
+                          flexShrink: 0,
+                        }}>
+                          {config.icon}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{
+                            margin: 0,
+                            fontSize: 13,
+                            fontWeight: 500,
+                            color: 'var(--text-primary)',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}>
+                            {activity.description}
+                          </p>
+                          <p style={{
+                            margin: 0,
+                            fontSize: 11,
+                            color: 'var(--text-tertiary)',
+                            marginTop: 2,
+                          }}>
+                            {activity.date}
+                          </p>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <EmptyState
+                  title="Sem atividade recente"
+                  description="As atividades aparecerão aqui conforme você usa o sistema"
+                  compact
+                />
+              )}
+            </Card>
+          </Col>
 
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+          {/* Gráfico de Receita */}
+          <Col xs={24} lg={12}>
+            <Card
+              title={
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <BarChartOutlined style={{ color: 'var(--primary-color)', fontSize: 16 }} />
+                  <span style={{ fontFamily: 'var(--display-family)', fontWeight: 700 }}>
+                    Receita por Período
+                  </span>
+                </div>
+              }
+              style={{ height: '100%' }}
+            >
+              <div style={{
+                height: 260,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'var(--bg-elevated)',
+                borderRadius: 10,
+                border: '1px dashed var(--border-color)',
+                gap: 12,
+              }}>
+                <div style={{
+                  width: 52,
+                  height: 52,
+                  borderRadius: '50%',
+                  background: 'rgba(4,120,87,0.1)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--primary-color)',
+                  fontSize: 24,
+                }}>
+                  <BarChartOutlined />
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{
+                    margin: 0,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    color: 'var(--text-primary)',
+                    fontFamily: 'var(--display-family)',
+                  }}>
+                    Gráfico de Receita
+                  </p>
+                  <p style={{
+                    margin: '4px 0 0',
+                    fontSize: 12,
+                    color: 'var(--text-secondary)',
+                  }}>
+                    Visualização de dados em desenvolvimento
+                  </p>
+                </div>
               </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Agendamentos</p>
-                <p className="text-2xl font-semibold text-gray-900">{reportData?.totalAppointments}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white rounded-lg shadow p-6">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-500">Receita Mensal</p>
-                <p className="text-2xl font-semibold text-gray-900">R$ {reportData?.monthlyRevenue.toFixed(2)}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Charts and Analytics */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-          {/* Recent Activity */}
-          <div className="bg-white rounded-lg shadow">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">Atividade Recente</h3>
-            </div>
-            <div className="p-6">
-              <div className="space-y-4">
-                {reportData?.recentActivity.map((activity, index) => (
-                  <div key={index} className="flex items-center">
-                    <div className={`w-2 h-2 rounded-full mr-3 ${
-                      activity.type === 'customer' ? 'bg-green-600' :
-                      activity.type === 'pet' ? 'bg-green-600' :
-                      activity.type === 'appointment' ? 'bg-purple-600' :
-                      'bg-gray-600'
-                    }`}></div>
-                    <div className="flex-1">
-                      <p className="text-sm text-gray-900">{activity.description}</p>
-                      <p className="text-xs text-gray-500">{activity.date}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Revenue Chart Placeholder */}
-        <div className="bg-white rounded-lg shadow">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h3 className="text-lg font-medium text-gray-900">Receita por Período</h3>
-          </div>
-          <div className="p-6">
-            <div className="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-              <div className="text-center">
-                <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                <h3 className="mt-2 text-sm font-medium text-gray-900">Gráfico de Receita</h3>
-                <p className="mt-1 text-sm text-gray-500">Visualização dos dados de receita será implementada aqui.</p>
-              </div>
-            </div>
-          </div>
-        </div>
+            </Card>
+          </Col>
+        </Row>
       </div>
     </div>
   )

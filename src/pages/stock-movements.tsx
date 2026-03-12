@@ -1,12 +1,35 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { Card, Table, Button, Modal, Form, Input, Select, DatePicker, message, Tag, Space, Statistic, Row, Col } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
+import { Table, Button, Modal, Form, Input, Select, message, Tag, Space, Row, Col } from 'antd'
+import { PlusOutlined, DollarOutlined, InboxOutlined, WarningOutlined } from '@ant-design/icons'
 import { apiService } from '../services/api'
 import { getStockMovementTypeOption, TAG_CLASS } from '../constants/tagConfig'
+import PageHeader from '../components/common/PageHeader'
+import PageSkeleton from '../components/common/PageSkeleton'
+import EmptyState from '../components/common/EmptyState'
+import StatsCard from '../components/common/StatsCard'
 
 const { Option } = Select
 const { TextArea } = Input
+
+const sectionCardStyle: React.CSSProperties = {
+  borderRadius: 12,
+  border: '1px solid var(--border-color)',
+  background: 'var(--bg-surface)',
+  boxShadow: 'var(--shadow-sm)',
+  overflow: 'hidden',
+}
+
+const sectionTitleStyle: React.CSSProperties = {
+  padding: '16px 24px',
+  borderBottom: '1px solid var(--border-color)',
+  fontWeight: 700,
+  fontSize: 12,
+  color: 'var(--text-secondary)',
+  fontFamily: 'var(--font-family)',
+  textTransform: 'uppercase',
+  letterSpacing: '0.05em',
+}
 
 export default function StockMovements() {
   const [movements, setMovements] = useState<any[]>([])
@@ -61,12 +84,12 @@ export default function StockMovements() {
       title: 'Data',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (date: string) => new Date(date).toLocaleString('pt-BR')
+      render: (date: string) => new Date(date).toLocaleString('pt-BR'),
     },
     {
       title: 'Produto',
       dataIndex: ['product', 'name'],
-      key: 'product'
+      key: 'product',
     },
     {
       title: 'Tipo',
@@ -79,7 +102,7 @@ export default function StockMovements() {
             {opt.label}
           </Tag>
         )
-      }
+      },
     },
     {
       title: 'Quantidade',
@@ -89,35 +112,35 @@ export default function StockMovements() {
         <span style={{ color: record.type === 'ENTRY' ? 'green' : record.type === 'EXIT' ? 'red' : 'blue' }}>
           {record.type === 'ENTRY' ? '+' : record.type === 'EXIT' ? '-' : ''}{qty}
         </span>
-      )
+      ),
     },
     {
       title: 'Estoque Anterior',
       dataIndex: 'previousStock',
-      key: 'previousStock'
+      key: 'previousStock',
     },
     {
       title: 'Estoque Novo',
       dataIndex: 'newStock',
-      key: 'newStock'
+      key: 'newStock',
     },
     {
       title: 'Motivo',
       dataIndex: 'reason',
-      key: 'reason'
-    }
+      key: 'reason',
+    },
   ]
 
   const reportColumns = [
     {
       title: 'Produto',
       dataIndex: 'name',
-      key: 'name'
+      key: 'name',
     },
     {
       title: 'SKU',
       dataIndex: 'sku',
-      key: 'sku'
+      key: 'sku',
     },
     {
       title: 'Estoque Atual',
@@ -125,117 +148,167 @@ export default function StockMovements() {
       key: 'stock',
       render: (stock: number, record: any) => (
         <Tag color={record.needsRestock ? 'red' : 'green'}>{stock}</Tag>
-      )
+      ),
     },
     {
       title: 'Estoque Mínimo',
       dataIndex: 'minStock',
-      key: 'minStock'
+      key: 'minStock',
     },
     {
       title: 'Valor Unitário',
       dataIndex: 'price',
       key: 'price',
-      render: (price: number) => `R$ ${price.toFixed(2)}`
+      render: (price: number) => `R$ ${price.toFixed(2)}`,
     },
     {
       title: 'Valor em Estoque',
       dataIndex: 'stockValue',
       key: 'stockValue',
-      render: (value: number) => `R$ ${value.toFixed(2)}`
+      render: (value: number) => `R$ ${value.toFixed(2)}`,
     },
     {
       title: 'Status',
       key: 'status',
-      render: (record: any) => (
-        record.needsRestock ? 
-          <Tag color="red">Repor</Tag> : 
+      render: (record: any) =>
+        record.needsRestock ? (
+          <Tag color="red">Repor</Tag>
+        ) : (
           <Tag color="green">OK</Tag>
-      )
-    }
+        ),
+    },
   ]
 
   const totalStockValue = stockReport.reduce((sum, item) => sum + item.stockValue, 0)
   const lowStockCount = stockReport.filter(item => item.needsRestock).length
 
+  const pageHeader = (
+    <PageHeader
+      title="Movimentações de Estoque"
+      subtitle="Entradas e saídas de produtos"
+      breadcrumb={[{ label: 'Estoque' }, { label: 'Movimentações' }]}
+      actions={
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => setShowModal(true)}
+        >
+          Registrar Movimentação
+        </Button>
+      }
+    />
+  )
+
+  if (loading) {
+    return (
+      <div>
+        {pageHeader}
+        <div style={{ padding: '0 24px 24px' }}>
+          <PageSkeleton type="table" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold">Movimentações de Estoque</h1>
-          <Button 
-            type="primary" 
-            icon={<PlusOutlined />}
-            onClick={() => setShowModal(true)}
-          >
-            Nova Movimentação
-          </Button>
-        </div>
+      {pageHeader}
 
-        <Row gutter={16} className="mb-6">
-          <Col span={8}>
-            <Card>
-              <Statistic 
-                title="Valor Total em Estoque" 
-                value={totalStockValue}
-                precision={2}
-                prefix="R$"
-              />
-            </Card>
+      <div style={{ padding: '0 24px 24px' }}>
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          <Col xs={24} sm={8}>
+            <StatsCard
+              title="Valor Total em Estoque"
+              value={`R$ ${totalStockValue.toFixed(2)}`}
+              icon={<DollarOutlined />}
+              iconColor="#16a34a"
+              accent="#16a34a"
+            />
           </Col>
-          <Col span={8}>
-            <Card>
-              <Statistic 
-                title="Produtos em Estoque" 
-                value={stockReport.length}
-              />
-            </Card>
+          <Col xs={24} sm={8}>
+            <StatsCard
+              title="Produtos em Estoque"
+              value={stockReport.length}
+              icon={<InboxOutlined />}
+              iconColor="#3b82f6"
+              accent="#3b82f6"
+            />
           </Col>
-          <Col span={8}>
-            <Card>
-              <Statistic 
-                title="Produtos com Estoque Baixo" 
-                value={lowStockCount}
-                valueStyle={{ color: lowStockCount > 0 ? '#cf1322' : '#3f8600' }}
-              />
-            </Card>
+          <Col xs={24} sm={8}>
+            <StatsCard
+              title="Produtos com Estoque Baixo"
+              value={lowStockCount}
+              icon={<WarningOutlined />}
+              iconColor={lowStockCount > 0 ? '#ef4444' : '#16a34a'}
+              accent={lowStockCount > 0 ? '#ef4444' : '#16a34a'}
+              valueStyle={{ color: lowStockCount > 0 ? '#cf1322' : '#3f8600' }}
+            />
           </Col>
         </Row>
 
-        <Card title="Relatório de Estoque" className="mb-6">
+        <div style={{ ...sectionCardStyle, marginBottom: 24 }}>
+          <div style={sectionTitleStyle}>Relatório de Estoque</div>
           <Table
             dataSource={stockReport}
             columns={reportColumns}
             rowKey="id"
-            loading={loading}
             pagination={{ pageSize: 10 }}
+            locale={{
+              emptyText: (
+                <EmptyState
+                  title="Nenhum produto encontrado"
+                  description="Não há produtos cadastrados no estoque."
+                />
+              ),
+            }}
           />
-        </Card>
+        </div>
 
-        <Card title="Histórico de Movimentações">
+        <div style={sectionCardStyle}>
+          <div style={sectionTitleStyle}>Histórico de Movimentações</div>
           <Table
             dataSource={movements}
             columns={columns}
             rowKey="id"
-            loading={loading}
             pagination={{ pageSize: 10 }}
+            locale={{
+              emptyText: (
+                <EmptyState
+                  title="Nenhuma movimentação registrada"
+                  description="Registre a primeira movimentação de estoque."
+                  actionLabel="Registrar Movimentação"
+                  onAction={() => setShowModal(true)}
+                />
+              ),
+            }}
           />
-        </Card>
+        </div>
 
         <Modal
-          title="Registrar Movimentação"
+          title={
+            <span
+              style={{
+                fontFamily: 'var(--display-family)',
+                fontSize: 16,
+                fontWeight: 700,
+                color: 'var(--text-primary)',
+              }}
+            >
+              Registrar Movimentação
+            </span>
+          }
           open={showModal}
           onCancel={() => setShowModal(false)}
           footer={null}
           width={600}
         >
           <Form form={form} layout="vertical" onFinish={handleCreateMovement}>
-            <Form.Item 
-              name="productId" 
+            <Form.Item
+              name="productId"
               label="Produto"
               rules={[{ required: true, message: 'Selecione o produto' }]}
             >
-              <Select 
+              <Select
                 placeholder="Selecione o produto"
                 showSearch
                 filterOption={(input, option) =>
@@ -250,8 +323,8 @@ export default function StockMovements() {
               </Select>
             </Form.Item>
 
-            <Form.Item 
-              name="type" 
+            <Form.Item
+              name="type"
               label="Tipo de Movimentação"
               rules={[{ required: true, message: 'Selecione o tipo' }]}
             >
@@ -262,8 +335,8 @@ export default function StockMovements() {
               </Select>
             </Form.Item>
 
-            <Form.Item 
-              name="quantity" 
+            <Form.Item
+              name="quantity"
               label="Quantidade"
               rules={[{ required: true, message: 'Digite a quantidade' }]}
             >
@@ -283,9 +356,7 @@ export default function StockMovements() {
                 <Button type="primary" htmlType="submit">
                   Registrar
                 </Button>
-                <Button onClick={() => setShowModal(false)}>
-                  Cancelar
-                </Button>
+                <Button onClick={() => setShowModal(false)}>Cancelar</Button>
               </Space>
             </Form.Item>
           </Form>
@@ -294,7 +365,3 @@ export default function StockMovements() {
     </div>
   )
 }
-
-
-
-

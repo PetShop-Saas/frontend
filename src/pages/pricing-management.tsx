@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import {
-  Card,
   Table,
   Button,
   message,
@@ -14,9 +13,7 @@ import {
   Select,
   Tag,
   Switch,
-  Divider,
   Tabs,
-  Typography,
   Alert,
   Popconfirm,
   Tooltip,
@@ -31,14 +28,14 @@ import {
   TagOutlined,
 } from '@ant-design/icons'
 import { apiService } from '../services/api'
-import dayjs, { Dayjs } from 'dayjs'
+import PageHeader from '../components/common/PageHeader'
+import PageSkeleton from '../components/common/PageSkeleton'
+import dayjs from 'dayjs'
 import 'dayjs/locale/pt-br'
 
 dayjs.locale('pt-br')
 
-const { Title, Text } = Typography
 const { Option } = Select
-const { RangePicker } = DatePicker
 
 interface PlanPricing {
   id: string
@@ -79,20 +76,19 @@ export default function PricingManagement() {
   const [planPricings, setPlanPricings] = useState<PlanPricing[]>([])
   const [promotions, setPromotions] = useState<Promotion[]>([])
   const [activeTab, setActiveTab] = useState('prices')
-  
-  // Modals
+
   const [priceModalVisible, setPriceModalVisible] = useState(false)
   const [promotionModalVisible, setPromotionModalVisible] = useState(false)
   const [editingPrice, setEditingPrice] = useState<PlanPricing | null>(null)
   const [editingPromotion, setEditingPromotion] = useState<Promotion | null>(null)
-  
+
   const [priceForm] = Form.useForm()
   const [promotionForm] = Form.useForm()
 
   useEffect(() => {
     const token = localStorage.getItem('token')
     const user = localStorage.getItem('user')
-    
+
     if (!token || !user) {
       message.error('Você precisa estar logado para acessar esta página')
       router.push('/login')
@@ -102,13 +98,13 @@ export default function PricingManagement() {
     try {
       const userData = JSON.parse(user)
       const isAdmin = userData.role === 'ADMIN' || userData.planRole === 'ADMIN'
-      
+
       if (!isAdmin) {
         message.error('Acesso negado. Apenas administradores podem acessar esta página.')
         router.push('/')
         return
       }
-    } catch (error) {
+    } catch {
       message.error('Erro ao verificar permissões')
       router.push('/login')
       return
@@ -126,8 +122,8 @@ export default function PricingManagement() {
       ])
       setPlanPricings(pricingsData as PlanPricing[])
       setPromotions(promotionsData as Promotion[])
-    } catch (error: any) {
-      message.error(error?.message || 'Erro ao carregar dados')
+    } catch (error: unknown) {
+      message.error((error as { message?: string })?.message || 'Erro ao carregar dados')
     } finally {
       setLoading(false)
     }
@@ -176,8 +172,8 @@ export default function PricingManagement() {
 
       setPriceModalVisible(false)
       loadData()
-    } catch (error: any) {
-      message.error(error?.message || 'Erro ao salvar preço')
+    } catch (error: unknown) {
+      message.error((error as { message?: string })?.message || 'Erro ao salvar preço')
     }
   }
 
@@ -186,8 +182,8 @@ export default function PricingManagement() {
       await apiService.deletePlanPricing(id)
       message.success('Preço removido com sucesso!')
       loadData()
-    } catch (error: any) {
-      message.error(error?.message || 'Erro ao remover preço')
+    } catch (error: unknown) {
+      message.error((error as { message?: string })?.message || 'Erro ao remover preço')
     }
   }
 
@@ -244,8 +240,8 @@ export default function PricingManagement() {
 
       setPromotionModalVisible(false)
       loadData()
-    } catch (error: any) {
-      message.error(error?.message || 'Erro ao salvar promoção')
+    } catch (error: unknown) {
+      message.error((error as { message?: string })?.message || 'Erro ao salvar promoção')
     }
   }
 
@@ -254,9 +250,22 @@ export default function PricingManagement() {
       await apiService.deletePromotion(id)
       message.success('Promoção removida com sucesso!')
       loadData()
-    } catch (error: any) {
-      message.error(error?.message || 'Erro ao remover promoção')
+    } catch (error: unknown) {
+      message.error((error as { message?: string })?.message || 'Erro ao remover promoção')
     }
+  }
+
+  const planColors: Record<string, string> = {
+    BASIC: 'blue',
+    PRO: 'purple',
+    ENTERPRISE: 'gold',
+  }
+
+  const tableWrapperStyle: React.CSSProperties = {
+    border: '1px solid var(--border-color)',
+    borderRadius: 12,
+    boxShadow: 'var(--shadow-sm)',
+    overflow: 'hidden',
   }
 
   const priceColumns = [
@@ -264,26 +273,21 @@ export default function PricingManagement() {
       title: 'Plano',
       dataIndex: 'plan',
       key: 'plan',
-      render: (plan: string) => {
-        const colors: Record<string, string> = {
-          BASIC: 'blue',
-          PRO: 'purple',
-          ENTERPRISE: 'gold',
-        }
-        return <Tag color={colors[plan] || 'default'}>{plan}</Tag>
-      },
+      render: (plan: string) => (
+        <Tag color={planColors[plan] || 'default'}>{plan}</Tag>
+      ),
     },
     {
       title: 'Preço',
       dataIndex: 'price',
       key: 'price',
       render: (price: number, record: PlanPricing) => (
-        <Text strong>
+        <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
           {new Intl.NumberFormat('pt-BR', {
             style: 'currency',
             currency: record.currency || 'BRL',
           }).format(price)}
-        </Text>
+        </span>
       ),
     },
     {
@@ -296,24 +300,28 @@ export default function PricingManagement() {
       title: 'Válido até',
       dataIndex: 'validUntil',
       key: 'validUntil',
-      render: (date?: string) => date ? dayjs(date).format('DD/MM/YYYY') : <Text type="secondary">Sem expiração</Text>,
+      render: (date?: string) =>
+        date ? (
+          dayjs(date).format('DD/MM/YYYY')
+        ) : (
+          <span style={{ color: 'var(--text-secondary)' }}>Sem expiração</span>
+        ),
     },
     {
       title: 'Status',
       dataIndex: 'isActive',
       key: 'isActive',
-      render: (isActive: boolean) => (
+      render: (isActive: boolean) =>
         isActive ? (
           <Tag icon={<CheckCircleOutlined />} color="success">Ativo</Tag>
         ) : (
           <Tag icon={<CloseCircleOutlined />} color="error">Inativo</Tag>
-        )
-      ),
+        ),
     },
     {
       title: 'Ações',
       key: 'actions',
-      render: (_: any, record: PlanPricing) => (
+      render: (_: unknown, record: PlanPricing) => (
         <Space>
           <Tooltip title="Editar">
             <Button
@@ -329,11 +337,7 @@ export default function PricingManagement() {
             cancelText="Não"
           >
             <Tooltip title="Remover">
-              <Button
-                type="link"
-                danger
-                icon={<DeleteOutlined />}
-              />
+              <Button type="link" danger icon={<DeleteOutlined />} />
             </Tooltip>
           </Popconfirm>
         </Space>
@@ -348,7 +352,7 @@ export default function PricingManagement() {
       key: 'name',
       render: (name: string, record: Promotion) => (
         <Space>
-          <Text strong>{name}</Text>
+          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{name}</span>
           {record.code && (
             <Tag icon={<TagOutlined />} color="blue">{record.code}</Tag>
           )}
@@ -361,15 +365,14 @@ export default function PricingManagement() {
       key: 'discount',
       render: (value: number, record: Promotion) => {
         if (record.discountType === 'PERCENTAGE') {
-          return <Text strong>{value}%</Text>
+          return (
+            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{value}%</span>
+          )
         }
         return (
-          <Text strong>
-            {new Intl.NumberFormat('pt-BR', {
-              style: 'currency',
-              currency: 'BRL',
-            }).format(value)}
-          </Text>
+          <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>
+            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)}
+          </span>
         )
       },
     },
@@ -381,12 +384,7 @@ export default function PricingManagement() {
         if (!planPricing) {
           return <Tag color="default">Todos os planos</Tag>
         }
-        const colors: Record<string, string> = {
-          BASIC: 'blue',
-          PRO: 'purple',
-          ENTERPRISE: 'gold',
-        }
-        return <Tag color={colors[planPricing.plan] || 'default'}>{planPricing.plan}</Tag>
+        return <Tag color={planColors[planPricing.plan] || 'default'}>{planPricing.plan}</Tag>
       },
     },
     {
@@ -399,34 +397,38 @@ export default function PricingManagement() {
       title: 'Válido até',
       dataIndex: 'validUntil',
       key: 'validUntil',
-      render: (date?: string) => date ? dayjs(date).format('DD/MM/YYYY') : <Text type="secondary">Sem expiração</Text>,
+      render: (date?: string) =>
+        date ? (
+          dayjs(date).format('DD/MM/YYYY')
+        ) : (
+          <span style={{ color: 'var(--text-secondary)' }}>Sem expiração</span>
+        ),
     },
     {
       title: 'Usos',
       key: 'usage',
-      render: (_: any, record: Promotion) => {
-        if (!record.usageLimit) {
-          return <Text>{record.usageCount} / ∞</Text>
-        }
-        return <Text>{record.usageCount} / {record.usageLimit}</Text>
-      },
+      render: (_: unknown, record: Promotion) =>
+        !record.usageLimit ? (
+          <span style={{ color: 'var(--text-secondary)' }}>{record.usageCount} / ∞</span>
+        ) : (
+          <span style={{ color: 'var(--text-secondary)' }}>{record.usageCount} / {record.usageLimit}</span>
+        ),
     },
     {
       title: 'Status',
       dataIndex: 'isActive',
       key: 'isActive',
-      render: (isActive: boolean) => (
+      render: (isActive: boolean) =>
         isActive ? (
           <Tag icon={<CheckCircleOutlined />} color="success">Ativa</Tag>
         ) : (
           <Tag icon={<CloseCircleOutlined />} color="error">Inativa</Tag>
-        )
-      ),
+        ),
     },
     {
       title: 'Ações',
       key: 'actions',
-      render: (_: any, record: Promotion) => (
+      render: (_: unknown, record: Promotion) => (
         <Space>
           <Tooltip title="Editar">
             <Button
@@ -442,11 +444,7 @@ export default function PricingManagement() {
             cancelText="Não"
           >
             <Tooltip title="Remover">
-              <Button
-                type="link"
-                danger
-                icon={<DeleteOutlined />}
-              />
+              <Button type="link" danger icon={<DeleteOutlined />} />
             </Tooltip>
           </Popconfirm>
         </Space>
@@ -454,23 +452,56 @@ export default function PricingManagement() {
     },
   ]
 
+  if (loading) {
+    return (
+      <div>
+        <PageHeader
+          title="Gestão de Preços"
+          subtitle="Configure preços e promoções dos planos"
+          breadcrumb={[{ label: 'Gestão de Preços' }]}
+        />
+        <div style={{ padding: '0 24px 24px' }}>
+          <PageSkeleton type="table" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div>
-      <div className="p-6">
-        <div className="mb-6">
-          <Title level={2}>Gerenciamento de Preços e Promoções</Title>
-          <Text type="secondary">
-            Gerencie os preços dos planos e crie promoções para atrair novos clientes.
-            As promoções não afetam assinaturas já em andamento.
-          </Text>
-        </div>
+      <PageHeader
+        title="Gestão de Preços"
+        subtitle="Configure preços e promoções dos planos"
+        breadcrumb={[{ label: 'Gestão de Preços' }]}
+        actions={
+          <>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleCreatePrice}
+              style={{ height: 36, borderRadius: 8, fontWeight: 600 }}
+            >
+              Novo Preço
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleCreatePromotion}
+              style={{ height: 36, borderRadius: 8, fontWeight: 600 }}
+            >
+              Nova Promoção
+            </Button>
+          </>
+        }
+      />
 
+      <div style={{ padding: '0 24px 24px' }}>
         <Alert
           message="Importante"
           description="As promoções aplicam-se apenas a novas assinaturas. Assinaturas existentes mantêm o preço original da data da transação."
           type="info"
           showIcon
-          className="mb-4"
+          style={{ marginBottom: 16 }}
         />
 
         <Tabs
@@ -481,52 +512,28 @@ export default function PricingManagement() {
               key: 'prices',
               label: 'Preços dos Planos',
               children: (
-                <Card
-                  title="Preços dos Planos"
-                  extra={
-                    <Button
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      onClick={handleCreatePrice}
-                    >
-                      Novo Preço
-                    </Button>
-                  }
-                >
+                <div style={tableWrapperStyle}>
                   <Table
                     columns={priceColumns}
                     dataSource={planPricings}
                     rowKey="id"
-                    loading={loading}
                     pagination={{ pageSize: 10 }}
                   />
-                </Card>
+                </div>
               ),
             },
             {
               key: 'promotions',
               label: 'Promoções',
               children: (
-                <Card
-                  title="Promoções"
-                  extra={
-                    <Button
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      onClick={handleCreatePromotion}
-                    >
-                      Nova Promoção
-                    </Button>
-                  }
-                >
+                <div style={tableWrapperStyle}>
                   <Table
                     columns={promotionColumns}
                     dataSource={promotions}
                     rowKey="id"
-                    loading={loading}
                     pagination={{ pageSize: 10 }}
                   />
-                </Card>
+                </div>
               ),
             },
           ]}
@@ -535,7 +542,14 @@ export default function PricingManagement() {
 
       {/* Modal de Preço */}
       <Modal
-        title={editingPrice ? 'Editar Preço' : 'Novo Preço'}
+        title={
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <DollarOutlined style={{ color: 'var(--primary-color)' }} />
+            <span style={{ fontFamily: 'var(--display-family)', fontWeight: 700 }}>
+              {editingPrice ? 'Editar Preço' : 'Novo Preço'}
+            </span>
+          </span>
+        }
         open={priceModalVisible}
         onOk={handleSavePrice}
         onCancel={() => setPriceModalVisible(false)}
@@ -564,15 +578,11 @@ export default function PricingManagement() {
               min={0}
               step={0.01}
               formatter={(value) => `R$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-              parser={(value: any) => value!.replace(/R\$\s?|(,*)/g, '')}
+              parser={(value) => (value ?? '').replace(/R\$\s?|(,*)/g, '')}
             />
           </Form.Item>
 
-          <Form.Item
-            name="currency"
-            label="Moeda"
-            initialValue="BRL"
-          >
+          <Form.Item name="currency" label="Moeda" initialValue="BRL">
             <Select>
               <Option value="BRL">BRL (Real Brasileiro)</Option>
             </Select>
@@ -586,26 +596,16 @@ export default function PricingManagement() {
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
 
-          <Form.Item
-            name="validUntil"
-            label="Válido até (opcional)"
-          >
+          <Form.Item name="validUntil" label="Válido até (opcional)">
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
 
-          <Form.Item
-            name="description"
-            label="Descrição (opcional)"
-          >
+          <Form.Item name="description" label="Descrição (opcional)">
             <Input.TextArea rows={3} />
           </Form.Item>
 
           {editingPrice && (
-            <Form.Item
-              name="isActive"
-              label="Status"
-              valuePropName="checked"
-            >
+            <Form.Item name="isActive" label="Status" valuePropName="checked">
               <Switch checkedChildren="Ativo" unCheckedChildren="Inativo" />
             </Form.Item>
           )}
@@ -614,7 +614,14 @@ export default function PricingManagement() {
 
       {/* Modal de Promoção */}
       <Modal
-        title={editingPromotion ? 'Editar Promoção' : 'Nova Promoção'}
+        title={
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <TagOutlined style={{ color: 'var(--primary-color)' }} />
+            <span style={{ fontFamily: 'var(--display-family)', fontWeight: 700 }}>
+              {editingPromotion ? 'Editar Promoção' : 'Nova Promoção'}
+            </span>
+          </span>
+        }
         open={promotionModalVisible}
         onOk={handleSavePromotion}
         onCancel={() => setPromotionModalVisible(false)}
@@ -629,17 +636,11 @@ export default function PricingManagement() {
             <Input placeholder="Ex: Black Friday 2024" />
           </Form.Item>
 
-          <Form.Item
-            name="description"
-            label="Descrição (opcional)"
-          >
+          <Form.Item name="description" label="Descrição (opcional)">
             <Input.TextArea rows={2} />
           </Form.Item>
 
-          <Form.Item
-            name="code"
-            label="Código da Promoção (opcional)"
-          >
+          <Form.Item name="code" label="Código da Promoção (opcional)">
             <Input placeholder="Ex: BLACKFRIDAY2024" />
           </Form.Item>
 
@@ -659,17 +660,10 @@ export default function PricingManagement() {
             label="Valor do Desconto"
             rules={[{ required: true, message: 'Informe o valor do desconto' }]}
           >
-            <InputNumber
-              style={{ width: '100%' }}
-              min={0}
-              step={0.01}
-            />
+            <InputNumber style={{ width: '100%' }} min={0} step={0.01} />
           </Form.Item>
 
-          <Form.Item
-            name="planPricingId"
-            label="Aplicar a um plano específico (opcional)"
-          >
+          <Form.Item name="planPricingId" label="Aplicar a um plano específico (opcional)">
             <Select
               placeholder="Deixe em branco para aplicar a todos os planos"
               allowClear
@@ -678,7 +672,8 @@ export default function PricingManagement() {
                 .filter((p) => p.isActive)
                 .map((p) => (
                   <Option key={p.id} value={p.id}>
-                    {p.plan} - {new Intl.NumberFormat('pt-BR', {
+                    {p.plan} -{' '}
+                    {new Intl.NumberFormat('pt-BR', {
                       style: 'currency',
                       currency: p.currency || 'BRL',
                     }).format(p.price)}
@@ -687,18 +682,11 @@ export default function PricingManagement() {
             </Select>
           </Form.Item>
 
-          <Form.Item
-            name="minMonths"
-            label="Mínimo de meses de assinatura"
-            initialValue={1}
-          >
+          <Form.Item name="minMonths" label="Mínimo de meses de assinatura" initialValue={1}>
             <InputNumber min={1} style={{ width: '100%' }} />
           </Form.Item>
 
-          <Form.Item
-            name="maxMonths"
-            label="Máximo de meses (opcional)"
-          >
+          <Form.Item name="maxMonths" label="Máximo de meses (opcional)">
             <InputNumber min={1} style={{ width: '100%' }} />
           </Form.Item>
 
@@ -710,26 +698,20 @@ export default function PricingManagement() {
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
 
-          <Form.Item
-            name="validUntil"
-            label="Válido até (opcional)"
-          >
+          <Form.Item name="validUntil" label="Válido até (opcional)">
             <DatePicker style={{ width: '100%' }} />
           </Form.Item>
 
-          <Form.Item
-            name="usageLimit"
-            label="Limite de usos (opcional)"
-          >
-            <InputNumber min={1} style={{ width: '100%' }} placeholder="Deixe em branco para ilimitado" />
+          <Form.Item name="usageLimit" label="Limite de usos (opcional)">
+            <InputNumber
+              min={1}
+              style={{ width: '100%' }}
+              placeholder="Deixe em branco para ilimitado"
+            />
           </Form.Item>
 
           {editingPromotion && (
-            <Form.Item
-              name="isActive"
-              label="Status"
-              valuePropName="checked"
-            >
+            <Form.Item name="isActive" label="Status" valuePropName="checked">
               <Switch checkedChildren="Ativa" unCheckedChildren="Inativa" />
             </Form.Item>
           )}
@@ -738,4 +720,3 @@ export default function PricingManagement() {
     </div>
   )
 }
-

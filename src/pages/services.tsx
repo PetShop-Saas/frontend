@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { apiService, extractArrayFromResponse } from '../services/api'
 import {
-  Card,
   Button,
   Table,
   Input,
@@ -15,10 +14,8 @@ import {
   Avatar,
   Popconfirm,
   message,
-  Empty,
   Row,
   Col,
-  Statistic
 } from 'antd'
 import {
   PlusOutlined,
@@ -28,10 +25,10 @@ import {
   SearchOutlined,
   ReloadOutlined,
   SettingOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined
 } from '@ant-design/icons'
 import { ACTIVE_INACTIVE_OPTIONS, getTagOption, TAG_CLASS } from '../constants/tagConfig'
+import PageHeader from '../components/common/PageHeader'
+import EmptyState from '../components/common/EmptyState'
 
 const { Search } = Input
 
@@ -175,16 +172,16 @@ export default function Services() {
       dataIndex: 'name',
       key: 'name',
       render: (text: string, record: Service) => (
-        <div className="flex items-center space-x-3">
-          <Avatar 
-            size={40} 
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Avatar
+            size={40}
             icon={<SettingOutlined />}
-            className="bg-green-100 text-green-600"
+            style={{ background: 'rgba(4,120,87,0.12)', color: '#047857', flexShrink: 0 }}
           />
           <div>
-            <div className="font-medium text-gray-900">{text}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>{text}</div>
             {record.description && (
-              <div className="text-sm text-gray-500">{record.description}</div>
+              <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 2 }}>{record.description}</div>
             )}
           </div>
         </div>
@@ -195,7 +192,7 @@ export default function Services() {
       dataIndex: 'price',
       key: 'price',
       render: (price: number) => (
-        <span className="text-lg font-bold text-green-600">
+        <span style={{ fontSize: 14, fontWeight: 700, color: '#047857' }}>
           R$ {(price ?? 0).toFixed(2)}
         </span>
       ),
@@ -205,7 +202,9 @@ export default function Services() {
       dataIndex: 'duration',
       key: 'duration',
       render: (duration: number) => (
-        <span className="text-gray-900">{duration ? `${duration} min` : '-'}</span>
+        <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+          {duration ? `${duration} min` : '—'}
+        </span>
       ),
     },
     {
@@ -230,24 +229,25 @@ export default function Services() {
             type="text"
             icon={<EyeOutlined />}
             onClick={() => handleViewDetails(record)}
-            className="text-green-600 hover:text-green-800"
+            style={{ color: 'var(--primary-color)' }}
           />
           <Button
             type="text"
             icon={<EditOutlined />}
             onClick={() => handleEdit(record)}
-            className="text-green-600 hover:text-green-800"
+            style={{ color: 'var(--primary-color)' }}
           />
           <Popconfirm
             title="Tem certeza que deseja remover este serviço?"
             onConfirm={() => handleDelete(record.id)}
             okText="Sim"
             cancelText="Não"
+            okButtonProps={{ danger: true }}
           >
             <Button
               type="text"
+              danger
               icon={<DeleteOutlined />}
-              className="text-red-600 hover:text-red-800"
             />
           </Popconfirm>
         </Space>
@@ -256,31 +256,23 @@ export default function Services() {
   ]
 
   return (
-    <div className="space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Serviços</h1>
-            <p className="text-gray-600">Gerencie os serviços oferecidos</p>
-          </div>
-          <div className="flex space-x-2">
+    <div>
+      <PageHeader
+        title="Serviços"
+        subtitle="Gerencie os serviços oferecidos pelo seu petshop"
+        breadcrumb={[{ label: 'Serviços' }]}
+        actions={
+          <>
             <Button
               icon={<ReloadOutlined />}
               onClick={loadData}
-              size="large"
-              className="px-6 py-3 hover:bg-gray-50 hover:border-gray-300"
+              loading={loading}
               style={{
-                backgroundColor: '#ffffff',
-                borderColor: '#d1d5db',
-                color: '#374151'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#f9fafb'
-                e.currentTarget.style.borderColor = '#9ca3af'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#ffffff'
-                e.currentTarget.style.borderColor = '#d1d5db'
+                height: 36,
+                borderRadius: 8,
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-secondary)',
+                background: 'var(--bg-surface)',
               }}
             >
               Atualizar
@@ -288,363 +280,302 @@ export default function Services() {
             <Button
               type="primary"
               icon={<PlusOutlined />}
-            onClick={() => setShowModal(true)}
-              className="bg-green-600 hover:bg-green-700 hover:border-green-700 border-green-600 px-6 py-3"
+              onClick={() => setShowModal(true)}
               style={{
-                backgroundColor: '#16a34a',
-                borderColor: '#16a34a'
+                height: 36,
+                borderRadius: 8,
+                background: 'var(--primary-color)',
+                border: 'none',
+                fontWeight: 600,
               }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#15803d'
-                e.currentTarget.style.borderColor = '#15803d'
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.backgroundColor = '#16a34a'
-                e.currentTarget.style.borderColor = '#16a34a'
-              }}
-              size="large"
             >
-            Novo Serviço
+              Novo Serviço
             </Button>
-          </div>
-        </div>
+          </>
+        }
+      />
 
-        {/* Search and Filters */}
-        <Card>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
-              <Search
+      <div style={{ padding: '0 24px 24px' }}>
+        {/* Busca e Filtros */}
+        <div style={{
+          display: 'flex',
+          gap: 10,
+          flexWrap: 'wrap',
+          marginBottom: 16,
+          padding: '14px 16px',
+          background: 'var(--bg-surface)',
+          borderRadius: 10,
+          border: '1px solid var(--border-color)',
+          boxShadow: 'var(--shadow-sm)',
+        }}>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <Search
               placeholder="Buscar serviços..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-                prefix={<SearchOutlined className="text-gray-400" />}
-                size="large"
+              onChange={e => setSearchTerm(e.target.value)}
+              prefix={<SearchOutlined style={{ color: 'var(--text-tertiary)' }} />}
+              style={{ borderRadius: 8, height: 36 }}
             />
           </div>
-            <div className="flex gap-2">
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            <Button
+              type={filterStatus === null ? 'primary' : 'default'}
+              onClick={() => setFilterStatus(null)}
+              style={{
+                height: 36, borderRadius: 8, fontWeight: 500,
+                ...(filterStatus === null
+                  ? { background: 'var(--primary-color)', border: 'none' }
+                  : { border: '1px solid var(--border-color)', color: 'var(--text-secondary)', background: 'var(--bg-surface)' }),
+              }}
+            >
+              Todos
+            </Button>
+            {statusOptions.map(option => (
               <Button
-                type={filterStatus === null ? 'primary' : 'default'}
-                onClick={() => setFilterStatus(null)}
-                className={filterStatus === null ? 'bg-green-600 hover:bg-green-700 border-green-600 px-6 py-2' : 'px-6 py-2'}
-                style={filterStatus === null ? {
-                  backgroundColor: '#16a34a',
-                  borderColor: '#16a34a'
-                } : {
-                  backgroundColor: '#ffffff',
-                  borderColor: '#d1d5db',
-                  color: '#374151'
-                }}
-                onMouseEnter={(e) => {
-                  if (filterStatus === null) {
-                    e.currentTarget.style.backgroundColor = '#15803d'
-                    e.currentTarget.style.borderColor = '#15803d'
-                  } else {
-                    e.currentTarget.style.backgroundColor = '#f9fafb'
-                    e.currentTarget.style.borderColor = '#9ca3af'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (filterStatus === null) {
-                    e.currentTarget.style.backgroundColor = '#16a34a'
-                    e.currentTarget.style.borderColor = '#16a34a'
-                  } else {
-                    e.currentTarget.style.backgroundColor = '#ffffff'
-                    e.currentTarget.style.borderColor = '#d1d5db'
-                  }
+                key={option.value}
+                type={filterStatus === option.value ? 'primary' : 'default'}
+                onClick={() => setFilterStatus(filterStatus === option.value ? null : option.value)}
+                style={{
+                  height: 36, borderRadius: 8, fontWeight: 500,
+                  ...(filterStatus === option.value
+                    ? { background: 'var(--primary-color)', border: 'none' }
+                    : { border: '1px solid var(--border-color)', color: 'var(--text-secondary)', background: 'var(--bg-surface)' }),
                 }}
               >
-                Todos
+                {option.label}
               </Button>
-              {statusOptions.map(option => (
-                <Button
-                  key={option.value}
-                  type={filterStatus === option.value ? 'primary' : 'default'}
-                  onClick={() => setFilterStatus(filterStatus === option.value ? null : option.value)}
-                  className={filterStatus === option.value ? 'bg-green-600 hover:bg-green-700 border-green-600 px-6 py-2' : 'px-6 py-2'}
-                  style={filterStatus === option.value ? {
-                    backgroundColor: '#16a34a',
-                    borderColor: '#16a34a'
-                  } : {
-                    backgroundColor: '#ffffff',
-                    borderColor: '#d1d5db',
-                    color: '#374151'
-                  }}
-                  onMouseEnter={(e) => {
-                    if (filterStatus === option.value) {
-                      e.currentTarget.style.backgroundColor = '#15803d'
-                      e.currentTarget.style.borderColor = '#15803d'
-                    } else {
-                      e.currentTarget.style.backgroundColor = '#f9fafb'
-                      e.currentTarget.style.borderColor = '#9ca3af'
-                    }
-                  }}
-                  onMouseLeave={(e) => {
-                    if (filterStatus === option.value) {
-                      e.currentTarget.style.backgroundColor = '#16a34a'
-                      e.currentTarget.style.borderColor = '#16a34a'
-                    } else {
-                      e.currentTarget.style.backgroundColor = '#ffffff'
-                      e.currentTarget.style.borderColor = '#d1d5db'
-                    }
-                  }}
-                >
-                  {option.label}
-                </Button>
-              ))}
+            ))}
+          </div>
         </div>
-                  </div>
-        </Card>
 
-        {/* Services Table */}
-        <Card>
+        {/* Tabela de Serviços */}
+        <div style={{
+          background: 'var(--bg-surface)',
+          borderRadius: 12,
+          border: '1px solid var(--border-color)',
+          boxShadow: 'var(--shadow-sm)',
+          overflow: 'hidden',
+        }}>
           <Table
             columns={columns}
             dataSource={filteredServices}
             rowKey="id"
             loading={loading}
+            scroll={{ x: 'max-content' }}
             pagination={{
               pageSize: 10,
               showSizeChanger: true,
               showQuickJumper: true,
               showTotal: (total, range) => `${range[0]}-${range[1]} de ${total} serviços`,
+              style: { padding: '12px 16px' },
             }}
             locale={{
               emptyText: (
-                <div className="text-center py-12">
-                  <SettingOutlined className="text-6xl text-gray-300 mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mt-4">Nenhum serviço encontrado</h3>
-                  <p className="mt-2 text-sm text-gray-500 mb-6">
-                    {searchTerm || filterStatus ? 'Tente ajustar seus filtros.' : 'Comece criando o primeiro serviço.'}
-                  </p>
-                  {!searchTerm && !filterStatus && (
-                    <Button
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      onClick={() => setShowModal(true)}
-                      size="large"
-                      className="bg-green-600 hover:bg-green-700 hover:border-green-700 border-green-600 px-6 py-3"
-                      style={{
-                        backgroundColor: '#16a34a',
-                        borderColor: '#16a34a'
-                      }}
-                      onMouseEnter={(e) => {
-                        e.currentTarget.style.backgroundColor = '#15803d'
-                        e.currentTarget.style.borderColor = '#15803d'
-                      }}
-                      onMouseLeave={(e) => {
-                        e.currentTarget.style.backgroundColor = '#16a34a'
-                        e.currentTarget.style.borderColor = '#16a34a'
-                      }}
-                    >
-                      Criar Primeiro Serviço
-                    </Button>
-                  )}
-                </div>
-              )
+                <EmptyState
+                  icon={<SettingOutlined style={{ fontSize: 32 }} />}
+                  title="Nenhum serviço encontrado"
+                  description={searchTerm || filterStatus ? 'Tente ajustar seus filtros.' : 'Comece criando o primeiro serviço.'}
+                  actionLabel={!searchTerm && !filterStatus ? 'Criar Primeiro Serviço' : undefined}
+                  onAction={!searchTerm && !filterStatus ? () => setShowModal(true) : undefined}
+                />
+              ),
             }}
           />
-        </Card>
+        </div>
+      </div>
 
-        {/* Modal de Novo/Editar Serviço */}
-        <Modal
-          title={
-            <div className="flex items-center space-x-2">
-              <SettingOutlined className="text-green-600" />
-              <span>{isEditing ? 'Editar Serviço' : 'Novo Serviço'}</span>
-            </div>
-          }
-          open={showModal}
-          onCancel={handleModalClose}
-          footer={null}
-          width={600}
+      {/* Modal: Novo / Editar Serviço */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <SettingOutlined style={{ color: 'var(--primary-color)' }} />
+            <span style={{ fontFamily: 'var(--display-family)', fontWeight: 700 }}>
+              {isEditing ? 'Editar Serviço' : 'Novo Serviço'}
+            </span>
+          </div>
+        }
+        open={showModal}
+        onCancel={handleModalClose}
+        footer={null}
+        width={600}
+      >
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={isEditing ? handleUpdate : handleCreate}
+          style={{ marginTop: 16 }}
         >
-          <Form
-            form={form}
-            layout="vertical"
-            onFinish={isEditing ? handleUpdate : handleCreate}
-            className="mt-4"
+          <Form.Item
+            name="name"
+            label="Nome do Serviço"
+            rules={[{ required: true, message: 'Por favor, insira o nome do serviço!' }]}
           >
-            <Form.Item
-              name="name"
-              label="Nome do Serviço"
-              rules={[{ required: true, message: 'Por favor, insira o nome do serviço!' }]}
-            >
-              <Input placeholder="Ex: Banho e Tosa" />
-            </Form.Item>
+            <Input placeholder="Ex: Banho e Tosa" style={{ borderRadius: 8 }} />
+          </Form.Item>
 
-            <Form.Item
-              name="description"
-              label="Descrição"
-            >
-              <Input.TextArea 
-                placeholder="Descrição do serviço (opcional)"
-                rows={3}
-              />
-            </Form.Item>
+          <Form.Item name="description" label="Descrição">
+            <Input.TextArea
+              placeholder="Descrição do serviço (opcional)"
+              rows={3}
+              style={{ borderRadius: 8 }}
+            />
+          </Form.Item>
 
-            <Row gutter={16}>
-              <Col span={12}>
-                <Form.Item
-                  name="price"
-                  label="Preço (R$)"
-                  rules={[{ required: true, message: 'Por favor, insira o preço!' }]}
-                >
-                  <InputNumber
-                    placeholder="0.00"
-                    min={0}
-                    step={0.01}
-                    style={{ width: '100%' }}
-                    formatter={value => `R$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                    parser={(value: any) => value!.replace(/R\$\s?|(,*)/g, '')}
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                name="price"
+                label="Preço (R$)"
+                rules={[{ required: true, message: 'Por favor, insira o preço!' }]}
+              >
+                <InputNumber
+                  placeholder="0.00"
+                  min={0}
+                  step={0.01}
+                  style={{ width: '100%', borderRadius: 8 }}
+                  formatter={value => `R$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={(value: any) => value!.replace(/R\$\s?|(,*)/g, '')}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                name="duration"
+                label="Duração (minutos)"
+                rules={[{ required: true, message: 'Por favor, insira a duração!' }]}
+              >
+                <InputNumber placeholder="60" min={1} style={{ width: '100%', borderRadius: 8 }} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item name="isActive" label="Status" valuePropName="checked" initialValue={true}>
+            <Switch checkedChildren="Ativo" unCheckedChildren="Inativo" defaultChecked />
+          </Form.Item>
+
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 8 }}>
+            <Button onClick={handleModalClose} style={{ borderRadius: 8 }}>
+              Cancelar
+            </Button>
+            <Button
+              type="primary"
+              htmlType="submit"
+              style={{ background: 'var(--primary-color)', border: 'none', borderRadius: 8, fontWeight: 600 }}
+            >
+              {isEditing ? 'Atualizar' : 'Criar'} Serviço
+            </Button>
+          </div>
+        </Form>
+      </Modal>
+
+      {/* Modal: Detalhes do Serviço */}
+      <Modal
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <SettingOutlined style={{ color: 'var(--primary-color)' }} />
+            <span style={{ fontFamily: 'var(--display-family)', fontWeight: 700 }}>
+              Detalhes do Serviço
+            </span>
+          </div>
+        }
+        open={showDetailsModal}
+        onCancel={() => setShowDetailsModal(false)}
+        footer={null}
+        width={560}
+      >
+        {selectedService && (
+          <div style={{ marginTop: 16 }}>
+            <Row gutter={24}>
+              <Col span={10}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                  <Avatar
+                    size={72}
+                    icon={<SettingOutlined />}
+                    style={{ background: 'rgba(4,120,87,0.12)', color: '#047857', fontSize: 28 }}
                   />
-                </Form.Item>
+                  <h3 style={{
+                    margin: 0,
+                    fontSize: 16,
+                    fontWeight: 800,
+                    color: 'var(--text-primary)',
+                    fontFamily: 'var(--display-family)',
+                    textAlign: 'center',
+                  }}>
+                    {selectedService.name}
+                  </h3>
+                  <p style={{
+                    margin: 0,
+                    fontSize: 13,
+                    color: 'var(--text-secondary)',
+                    textAlign: 'center',
+                    lineHeight: 1.5,
+                  }}>
+                    {selectedService.description || 'Sem descrição'}
+                  </p>
+                </div>
               </Col>
-              <Col span={12}>
-                <Form.Item
-                  name="duration"
-                  label="Duração (minutos)"
-                  rules={[{ required: true, message: 'Por favor, insira a duração!' }]}
-                >
-                  <InputNumber
-                    placeholder="60"
-                    min={1}
-                    style={{ width: '100%' }}
-                  />
-                </Form.Item>
+              <Col span={14}>
+                <h4 style={{
+                  margin: '0 0 12px',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: 'var(--text-tertiary)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.06em',
+                }}>
+                  Informações
+                </h4>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {[
+                    {
+                      label: 'Preço',
+                      value: (
+                        <span style={{ fontWeight: 700, color: '#047857' }}>
+                          R$ {(selectedService.price ?? 0).toFixed(2)}
+                        </span>
+                      ),
+                    },
+                    {
+                      label: 'Duração',
+                      value: selectedService.duration ? `${selectedService.duration} min` : '—',
+                    },
+                    {
+                      label: 'Status',
+                      value: (
+                        <Tag color={selectedService.isActive ? 'green' : 'red'} className={TAG_CLASS}>
+                          {selectedService.isActive ? 'Ativo' : 'Inativo'}
+                        </Tag>
+                      ),
+                    },
+                  ].map(row => (
+                    <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{row.label}:</span>
+                      <span style={{ fontSize: 13 }}>{row.value}</span>
+                    </div>
+                  ))}
+                </div>
               </Col>
             </Row>
 
-            <Form.Item
-              name="isActive"
-              label="Status"
-              valuePropName="checked"
-              initialValue={true}
-            >
-              <Switch 
-                checkedChildren="Ativo" 
-                unCheckedChildren="Inativo"
-                defaultChecked
-              />
-            </Form.Item>
-
-            <div className="flex justify-end space-x-2 pt-4">
-              <Button onClick={handleModalClose}>
-                Cancelar
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 24 }}>
+              <Button onClick={() => setShowDetailsModal(false)} style={{ borderRadius: 8 }}>
+                Fechar
               </Button>
               <Button
                 type="primary"
-                htmlType="submit"
-                className="bg-green-600 hover:bg-green-700 hover:border-green-700 border-green-600 px-6 py-2"
-                style={{
-                  backgroundColor: '#16a34a',
-                  borderColor: '#16a34a'
+                icon={<EditOutlined />}
+                onClick={() => {
+                  setShowDetailsModal(false)
+                  handleEdit(selectedService)
                 }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = '#15803d'
-                  e.currentTarget.style.borderColor = '#15803d'
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = '#16a34a'
-                  e.currentTarget.style.borderColor = '#16a34a'
-                }}
+                style={{ background: 'var(--primary-color)', border: 'none', borderRadius: 8, fontWeight: 600 }}
               >
-                {isEditing ? 'Atualizar' : 'Criar'} Serviço
+                Editar Serviço
               </Button>
             </div>
-          </Form>
-        </Modal>
-
-        {/* Modal de Detalhes */}
-        <Modal
-          title={
-            <div className="flex items-center space-x-2">
-              <SettingOutlined className="text-green-600" />
-              <span>Detalhes do Serviço</span>
-            </div>
-          }
-          open={showDetailsModal}
-          onCancel={() => setShowDetailsModal(false)}
-          footer={null}
-          width={600}
-        >
-          {selectedService && (
-            <div className="mt-6">
-              <Row gutter={16}>
-                <Col span={12}>
-                  <div className="text-center">
-                    <Avatar 
-                      size={80} 
-                      icon={<SettingOutlined />}
-                      className="bg-green-100 text-green-600 mb-4"
-                    />
-                    <h3 className="text-xl font-bold text-gray-900">
-                      {selectedService.name}
-                    </h3>
-                    <p className="text-gray-600">
-                      {selectedService.description || 'Sem descrição'}
-                    </p>
-                  </div>
-                </Col>
-                <Col span={12}>
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="font-medium text-gray-900 mb-2">Informações</h4>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Preço:</span>
-                          <span className="font-bold text-green-600">
-                            R$ {(selectedService.price ?? 0).toFixed(2)}
-                          </span>
-                    </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Duração:</span>
-                          <span className="font-medium">
-                            {selectedService.duration ? `${selectedService.duration} min` : '-'}
-                          </span>
-                </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-600">Status:</span>
-                          <Tag color={selectedService.isActive ? 'green' : 'red'} className={TAG_CLASS}>
-                            {selectedService.isActive ? 'Ativo' : 'Inativo'}
-                          </Tag>
-                </div>
-              </div>
-            </div>
-        </div>
-                </Col>
-              </Row>
-
-              <div className="flex justify-end space-x-2">
-                <Button onClick={() => setShowDetailsModal(false)}>
-                  Fechar
-                </Button>
-                <Button
-                  type="primary"
-                  icon={<EditOutlined />}
-                  onClick={() => {
-                    setShowDetailsModal(false)
-                    handleEdit(selectedService)
-                  }}
-                  className="bg-green-600 hover:bg-green-700 hover:border-green-700 border-green-600 px-6 py-2"
-                  style={{
-                    backgroundColor: '#16a34a',
-                    borderColor: '#16a34a'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#15803d'
-                    e.currentTarget.style.borderColor = '#15803d'
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = '#16a34a'
-                    e.currentTarget.style.borderColor = '#16a34a'
-                  }}
-                >
-                  Editar Serviço
-                </Button>
-              </div>
           </div>
         )}
-        </Modal>
+      </Modal>
     </div>
   )
 }

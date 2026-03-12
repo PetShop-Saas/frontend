@@ -1,11 +1,11 @@
 import React from 'react'
-import { Button, Empty } from 'antd'
-import { PlusOutlined } from '@ant-design/icons'
+import { InboxOutlined } from '@ant-design/icons'
 
 interface EmptyStateProps {
   icon?: React.ReactNode
-  title: string
+  title?: string
   description?: string
+  action?: React.ReactNode
   actionLabel?: string
   onAction?: () => void
   compact?: boolean
@@ -15,41 +15,103 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   icon,
   title,
   description,
+  action,
   actionLabel,
   onAction,
   compact = false,
 }) => {
+  const iconSize = compact ? 22 : 32
+  const paddingY = compact ? 24 : 40
+
+  const resolvedAction = action ?? (actionLabel && onAction ? (
+    <button
+      onClick={onAction}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        padding: '7px 16px',
+        backgroundColor: 'var(--primary-color)',
+        color: '#ffffff',
+        border: 'none',
+        borderRadius: 8,
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: 'pointer',
+        fontFamily: 'var(--font-family)',
+        transition: 'background 0.15s',
+      }}
+      onMouseEnter={e => (e.currentTarget.style.backgroundColor = 'var(--primary-hover)')}
+      onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'var(--primary-color)')}
+    >
+      {actionLabel}
+    </button>
+  ) : null)
+
   return (
-    <div className={`flex flex-col items-center justify-center text-center ${compact ? 'py-8' : 'py-16'}`}>
-      {icon && (
-        <div className="text-gray-300 dark:text-gray-600 mb-4" style={{ fontSize: compact ? 40 : 56 }}>
-          {icon}
-        </div>
+    <div
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        textAlign: 'center',
+        paddingTop: paddingY,
+        paddingBottom: paddingY,
+      }}
+    >
+      <div
+        style={{
+          width: compact ? 52 : 72,
+          height: compact ? 52 : 72,
+          borderRadius: '50%',
+          backgroundColor: 'rgba(16, 185, 129, 0.1)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: compact ? 10 : 14,
+          color: '#10b981',
+          fontSize: iconSize,
+          flexShrink: 0,
+        }}
+      >
+        {icon ?? <InboxOutlined style={{ fontSize: iconSize }} />}
+      </div>
+
+      {title && (
+        <h3
+          style={{
+            fontFamily: 'var(--display-family)',
+            fontSize: 16,
+            fontWeight: 600,
+            color: 'var(--text-primary)',
+            margin: 0,
+            lineHeight: 1.3,
+          }}
+        >
+          {title}
+        </h3>
       )}
-      {!icon && (
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={null}
-          style={{ marginBottom: 8 }}
-        />
-      )}
-      <h3 className={`font-semibold text-gray-700 dark:text-gray-300 mt-2 ${compact ? 'text-base' : 'text-lg'}`}>
-        {title}
-      </h3>
-      {description && (
-        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-xs">
+
+      {!compact && description && (
+        <p
+          style={{
+            fontFamily: 'var(--font-family)',
+            fontSize: 13,
+            color: 'var(--text-secondary)',
+            margin: '6px 0 0',
+            maxWidth: 280,
+            lineHeight: 1.5,
+          }}
+        >
           {description}
         </p>
       )}
-      {actionLabel && onAction && (
-        <Button
-          type="primary"
-          icon={<PlusOutlined />}
-          onClick={onAction}
-          className="mt-4"
-        >
-          {actionLabel}
-        </Button>
+
+      {resolvedAction && (
+        <div style={{ marginTop: compact ? 10 : 16 }}>
+          {resolvedAction}
+        </div>
       )}
     </div>
   )

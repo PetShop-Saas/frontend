@@ -1,15 +1,32 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
 import {
-  Card, Button, Modal, Form, InputNumber, Input, message,
-  Table, Tag, Space, Tabs, Statistic, Row, Col, Spin, Alert
+  Card,
+  Button,
+  Modal,
+  Form,
+  InputNumber,
+  Input,
+  message,
+  Table,
+  Space,
+  Tabs,
+  Alert,
+  Row,
+  Col
 } from 'antd'
 import {
-  QrcodeOutlined, CreditCardOutlined, ReloadOutlined, CheckCircleOutlined, ClockCircleOutlined
+  QrcodeOutlined,
+  CreditCardOutlined,
+  ReloadOutlined,
+  CheckCircleOutlined,
+  ClockCircleOutlined,
+  PlusOutlined
 } from '@ant-design/icons'
 import { apiService } from '../services/api'
-
-const { TabPane } = Tabs
+import PageHeader from '../components/common/PageHeader'
+import PageSkeleton from '../components/common/PageSkeleton'
+import EmptyState from '../components/common/EmptyState'
 
 interface PixPayment {
   id: string
@@ -30,6 +47,33 @@ interface Billing {
   dueDate?: string
   paymentUrl?: string
   createdAt: string
+}
+
+const statusBadgeMap: Record<string, { bg: string; color: string; label: string }> = {
+  PENDING:   { bg: 'rgba(251,146,60,0.12)',  color: '#ea6c00', label: 'Pendente' },
+  PAID:      { bg: 'rgba(16,185,129,0.12)',  color: '#059669', label: 'Pago' },
+  EXPIRED:   { bg: 'rgba(239,68,68,0.12)',   color: '#dc2626', label: 'Expirado' },
+  OVERDUE:   { bg: 'rgba(239,68,68,0.12)',   color: '#dc2626', label: 'Vencido' },
+  CANCELLED: { bg: 'rgba(107,114,128,0.12)', color: '#6b7280', label: 'Cancelado' },
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const info = statusBadgeMap[status] ?? { bg: 'rgba(107,114,128,0.12)', color: '#6b7280', label: status }
+  return (
+    <span style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      padding: '2px 10px',
+      borderRadius: 20,
+      fontSize: 12,
+      fontWeight: 600,
+      background: info.bg,
+      color: info.color,
+      border: `1px solid ${info.color}33`,
+    }}>
+      {info.label}
+    </span>
+  )
 }
 
 export default function Payments() {
@@ -80,7 +124,7 @@ export default function Payments() {
       }) as any
       setPixResult(result)
       pixForm.resetFields()
-      // Inicia polling de status a cada 5s
+      setShowPixModal(false)
       if (pollingRef.current) clearInterval(pollingRef.current)
       pollingRef.current = setInterval(() => checkPixStatus(result.id), 5000)
     } catch {
@@ -128,41 +172,40 @@ export default function Payments() {
     }
   }
 
-  const getStatusTag = (status: string) => {
-    const map: Record<string, { color: string; label: string }> = {
-      PENDING: { color: 'orange', label: 'Pendente' },
-      PAID: { color: 'green', label: 'Pago' },
-      EXPIRED: { color: 'red', label: 'Expirado' },
-      OVERDUE: { color: 'red', label: 'Vencido' },
-      CANCELLED: { color: 'default', label: 'Cancelado' }
-    }
-    const info = map[status] ?? { color: 'default', label: status }
-    return <Tag color={info.color}>{info.label}</Tag>
-  }
-
   const billingColumns = [
     {
       title: 'Descrição',
       dataIndex: 'description',
-      key: 'description'
+      key: 'description',
+      render: (v: string) => (
+        <span style={{ fontSize: 13, color: 'var(--text-primary)', fontWeight: 500 }}>{v}</span>
+      ),
     },
     {
       title: 'Valor',
       dataIndex: 'amount',
       key: 'amount',
-      render: (v: number) => `R$ ${(v / 100).toFixed(2).replace('.', ',')}`
+      render: (v: number) => (
+        <span style={{ fontSize: 14, fontWeight: 700, color: '#059669' }}>
+          R$ {(v / 100).toFixed(2).replace('.', ',')}
+        </span>
+      ),
     },
     {
       title: 'Vencimento',
       dataIndex: 'dueDate',
       key: 'dueDate',
-      render: (d: string) => d ? new Date(d).toLocaleDateString('pt-BR') : '-'
+      render: (d: string) => (
+        <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+          {d ? new Date(d).toLocaleDateString('pt-BR') : '-'}
+        </span>
+      ),
     },
     {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',
-      render: (s: string) => getStatusTag(s)
+      render: (s: string) => <StatusBadge status={s} />,
     },
     {
       title: 'Link',
@@ -170,156 +213,290 @@ export default function Payments() {
       render: (_: any, record: Billing) =>
         record.paymentUrl ? (
           <a href={record.paymentUrl} target="_blank" rel="noreferrer">
-            <Button size="small">Abrir</Button>
+            <Button
+              size="small"
+              style={{
+                height: 28,
+                borderRadius: 6,
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-secondary)',
+                background: 'var(--bg-surface)',
+                fontSize: 12,
+              }}
+            >
+              Abrir
+            </Button>
           </a>
-        ) : '-'
-    }
+        ) : (
+          <span style={{ color: 'var(--text-tertiary)', fontSize: 13 }}>—</span>
+        ),
+    },
   ]
+
+  const pixTabContent = (
+    <Row gutter={[16, 16]} style={{ marginTop: 0 }}>
+      <Col xs={24} lg={pixResult ? 12 : 24}>
+        <Card
+          bodyStyle={{ padding: 20 }}
+          style={{
+            borderRadius: 12,
+            border: '1px solid var(--border-color)',
+            boxShadow: 'var(--shadow-sm)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+              Gerar QR Code PIX
+            </h3>
+            <Button
+              type="primary"
+              icon={<QrcodeOutlined />}
+              onClick={() => setShowPixModal(true)}
+            >
+              Novo PIX
+            </Button>
+          </div>
+
+          {!pixResult ? (
+            <EmptyState
+              icon={<QrcodeOutlined style={{ fontSize: 32 }} />}
+              title="Nenhum QR Code gerado"
+              description='Clique em "Novo PIX" para gerar um QR Code de pagamento'
+            />
+          ) : (
+            <Space direction="vertical" size="middle" style={{ width: '100%', alignItems: 'center' }}>
+              {pixResult.status === 'PAID' && (
+                <Alert
+                  message="Pagamento confirmado!"
+                  type="success"
+                  showIcon
+                  icon={<CheckCircleOutlined />}
+                  style={{ width: '100%' }}
+                />
+              )}
+              {pixResult.status === 'EXPIRED' && (
+                <Alert
+                  message="QR Code expirado"
+                  type="error"
+                  showIcon
+                  style={{ width: '100%' }}
+                />
+              )}
+              {pixResult.status === 'PENDING' && (
+                <Alert
+                  message="Aguardando pagamento..."
+                  type="info"
+                  showIcon
+                  icon={<ClockCircleOutlined />}
+                  style={{ width: '100%' }}
+                />
+              )}
+              {pixResult.qrCodeImage && (
+                <img
+                  src={pixResult.qrCodeImage}
+                  alt="QR Code PIX"
+                  style={{
+                    width: 200,
+                    height: 200,
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 8,
+                  }}
+                />
+              )}
+              {pixResult.qrCode && (
+                <Input.TextArea
+                  value={pixResult.qrCode}
+                  readOnly
+                  rows={3}
+                  style={{ fontSize: 11 }}
+                />
+              )}
+              <Space>
+                <Button
+                  icon={<ReloadOutlined spin={pixStatusLoading} />}
+                  onClick={() => checkPixStatus(pixResult.id)}
+                  disabled={pixResult.status !== 'PENDING'}
+                  style={{
+                    height: 36,
+                    borderRadius: 8,
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-secondary)',
+                    background: 'var(--bg-surface)',
+                  }}
+                >
+                  Verificar Status
+                </Button>
+                <Button
+                  onClick={() => {
+                    setPixResult(null)
+                    if (pollingRef.current) clearInterval(pollingRef.current)
+                  }}
+                  style={{
+                    height: 36,
+                    borderRadius: 8,
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-secondary)',
+                    background: 'var(--bg-surface)',
+                  }}
+                >
+                  Limpar
+                </Button>
+              </Space>
+            </Space>
+          )}
+        </Card>
+      </Col>
+
+      {pixResult && (
+        <Col xs={24} lg={12}>
+          <Card
+            bodyStyle={{ padding: 20 }}
+            style={{
+              borderRadius: 12,
+              border: '1px solid var(--border-color)',
+              boxShadow: 'var(--shadow-sm)',
+            }}
+          >
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 16px' }}>
+              Detalhes
+            </h3>
+            <Space direction="vertical" size="small" style={{ width: '100%' }}>
+              <div style={{
+                padding: '12px 16px',
+                borderRadius: 10,
+                border: '1px solid var(--border-subtle)',
+                background: 'var(--bg-elevated)',
+              }}>
+                <p style={{ fontSize: 12, color: 'var(--text-secondary)', margin: '0 0 4px' }}>Valor</p>
+                <p style={{ fontSize: 22, fontWeight: 800, color: '#059669', margin: 0, fontFamily: 'var(--display-family)' }}>
+                  R$ {(pixResult.amount / 100).toFixed(2).replace('.', ',')}
+                </p>
+              </div>
+              {pixResult.description && (
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                  <strong style={{ color: 'var(--text-primary)' }}>Descrição:</strong> {pixResult.description}
+                </div>
+              )}
+              {pixResult.expiresAt && (
+                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                  <strong style={{ color: 'var(--text-primary)' }}>Expira em:</strong>{' '}
+                  {new Date(pixResult.expiresAt).toLocaleString('pt-BR')}
+                </div>
+              )}
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <strong style={{ color: 'var(--text-primary)' }}>Status:</strong>
+                <StatusBadge status={pixResult.status} />
+              </div>
+            </Space>
+          </Card>
+        </Col>
+      )}
+    </Row>
+  )
+
+  const billingsTabContent = (
+    <div>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <Button
+          type="primary"
+          icon={<PlusOutlined />}
+          onClick={() => setShowBillingModal(true)}
+        >
+          Nova Cobrança
+        </Button>
+      </div>
+      <div style={{
+        borderRadius: 12,
+        overflow: 'hidden',
+        border: '1px solid var(--border-color)',
+        boxShadow: 'var(--shadow-sm)',
+      }}>
+        <Table
+          columns={billingColumns}
+          dataSource={billings}
+          rowKey="id"
+          loading={loading}
+          locale={{
+            emptyText: (
+              <EmptyState
+                icon={<CreditCardOutlined style={{ fontSize: 28 }} />}
+                title="Nenhuma cobrança criada"
+                description="Crie uma cobrança para começar a receber pagamentos"
+                compact
+              />
+            ),
+          }}
+        />
+      </div>
+    </div>
+  )
 
   return (
     <div>
-      <Space direction="vertical" size="large" style={{ width: '100%' }}>
-        <div className="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-600">
-          <h2 style={{ fontSize: 24, fontWeight: 600, margin: 0 }}>Pagamentos</h2>
-          <p style={{ color: '#6b7280', margin: '4px 0 0' }}>
-            Gerencie cobranças via PIX e links de pagamento (AbacatePay)
-          </p>
-        </div>
-
-        <Tabs defaultActiveKey="pix">
-          <TabPane tab={<span><QrcodeOutlined /> PIX</span>} key="pix">
-            <Row gutter={[16, 16]}>
-              <Col xs={24} lg={pixResult ? 12 : 24}>
-                <Card
-                  title="Gerar QR Code PIX"
-                  extra={
-                    <Button
-                      type="primary"
-                      icon={<QrcodeOutlined />}
-                      style={{ backgroundColor: '#059669', borderColor: '#059669' }}
-                      onClick={() => setShowPixModal(true)}
-                    >
-                      Novo PIX
-                    </Button>
-                  }
-                >
-                  {!pixResult ? (
-                    <div style={{ textAlign: 'center', padding: '40px 0', color: '#6b7280' }}>
-                      <QrcodeOutlined style={{ fontSize: 48, color: '#d1d5db' }} />
-                      <p style={{ marginTop: 16 }}>Clique em &quot;Novo PIX&quot; para gerar um QR Code de pagamento</p>
-                    </div>
-                  ) : (
-                    <Space direction="vertical" size="middle" style={{ width: '100%', alignItems: 'center' }}>
-                      {pixResult.status === 'PAID' && (
-                        <Alert
-                          message="Pagamento confirmado!"
-                          type="success"
-                          showIcon
-                          icon={<CheckCircleOutlined />}
-                        />
-                      )}
-                      {pixResult.status === 'EXPIRED' && (
-                        <Alert message="QR Code expirado" type="error" showIcon />
-                      )}
-                      {pixResult.status === 'PENDING' && (
-                        <Alert
-                          message="Aguardando pagamento..."
-                          type="info"
-                          showIcon
-                          icon={<ClockCircleOutlined />}
-                        />
-                      )}
-                      {pixResult.qrCodeImage && (
-                        <img
-                          src={pixResult.qrCodeImage}
-                          alt="QR Code PIX"
-                          style={{ width: 200, height: 200, border: '1px solid #e5e7eb', borderRadius: 8 }}
-                        />
-                      )}
-                      {pixResult.qrCode && (
-                        <Input.TextArea
-                          value={pixResult.qrCode}
-                          readOnly
-                          rows={3}
-                          style={{ fontSize: 11 }}
-                        />
-                      )}
-                      <Space>
-                        <Button
-                          icon={<ReloadOutlined spin={pixStatusLoading} />}
-                          onClick={() => checkPixStatus(pixResult.id)}
-                          disabled={pixResult.status !== 'PENDING'}
-                        >
-                          Verificar Status
-                        </Button>
-                        <Button onClick={() => {
-                          setPixResult(null)
-                          if (pollingRef.current) clearInterval(pollingRef.current)
-                        }}>
-                          Limpar
-                        </Button>
-                      </Space>
-                    </Space>
-                  )}
-                </Card>
-              </Col>
-              {pixResult && (
-                <Col xs={24} lg={12}>
-                  <Card title="Detalhes">
-                    <Space direction="vertical" size="small" style={{ width: '100%' }}>
-                      <Statistic
-                        title="Valor"
-                        value={pixResult.amount / 100}
-                        prefix="R$"
-                        precision={2}
-                        valueStyle={{ color: '#059669' }}
-                      />
-                      {pixResult.description && (
-                        <div><strong>Descrição:</strong> {pixResult.description}</div>
-                      )}
-                      {pixResult.expiresAt && (
-                        <div>
-                          <strong>Expira em:</strong>{' '}
-                          {new Date(pixResult.expiresAt).toLocaleString('pt-BR')}
-                        </div>
-                      )}
-                      <div><strong>Status:</strong> {getStatusTag(pixResult.status)}</div>
-                    </Space>
-                  </Card>
-                </Col>
-              )}
-            </Row>
-          </TabPane>
-
-          <TabPane tab={<span><CreditCardOutlined /> Cobranças</span>} key="billings">
-            <Card
-              title="Cobranças / Links de Pagamento"
-              extra={
-                <Button
-                  type="primary"
-                  icon={<CreditCardOutlined />}
-                  style={{ backgroundColor: '#059669', borderColor: '#059669' }}
-                  onClick={() => setShowBillingModal(true)}
-                >
-                  Nova Cobrança
-                </Button>
-              }
+      <PageHeader
+        title="Pagamentos"
+        subtitle="Gerencie cobranças e pagamentos PIX"
+        breadcrumb={[{ label: 'Pagamentos' }]}
+        actions={
+          <>
+            <Button
+              icon={<QrcodeOutlined />}
+              onClick={() => setShowPixModal(true)}
+              style={{
+                height: 36,
+                borderRadius: 8,
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-secondary)',
+                background: 'var(--bg-surface)',
+              }}
             >
-              <Table
-                columns={billingColumns}
-                dataSource={billings}
-                rowKey="id"
-                loading={loading}
-                locale={{ emptyText: 'Nenhuma cobrança criada' }}
-              />
-            </Card>
-          </TabPane>
-        </Tabs>
-      </Space>
+              Gerar PIX
+            </Button>
+            <Button
+              type="primary"
+              icon={<CreditCardOutlined />}
+              onClick={() => setShowBillingModal(true)}
+            >
+              Nova Cobrança
+            </Button>
+          </>
+        }
+      />
+
+      <div style={{ padding: '0 24px 24px' }}>
+        <Tabs
+          defaultActiveKey="pix"
+          items={[
+            {
+              key: 'pix',
+              label: (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <QrcodeOutlined /> PIX
+                </span>
+              ),
+              children: pixTabContent,
+            },
+            {
+              key: 'billings',
+              label: (
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <CreditCardOutlined /> Cobranças
+                </span>
+              ),
+              children: billingsTabContent,
+            },
+          ]}
+        />
+      </div>
 
       {/* Modal PIX */}
       <Modal
-        title="Gerar QR Code PIX"
+        title={
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)', fontWeight: 700 }}>
+            <QrcodeOutlined style={{ color: 'var(--primary-color)' }} />
+            Gerar QR Code PIX
+          </span>
+        }
         open={showPixModal}
         onCancel={() => setShowPixModal(false)}
         footer={null}
@@ -338,13 +515,19 @@ export default function Payments() {
           </Form.Item>
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
-              <Button onClick={() => setShowPixModal(false)}>Cancelar</Button>
               <Button
-                type="primary"
-                htmlType="submit"
-                loading={pixLoading}
-                style={{ backgroundColor: '#059669', borderColor: '#059669' }}
+                onClick={() => setShowPixModal(false)}
+                style={{
+                  height: 36,
+                  borderRadius: 8,
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-secondary)',
+                  background: 'var(--bg-surface)',
+                }}
               >
+                Cancelar
+              </Button>
+              <Button type="primary" htmlType="submit" loading={pixLoading}>
                 Gerar QR Code
               </Button>
             </Space>
@@ -354,7 +537,12 @@ export default function Payments() {
 
       {/* Modal Cobrança */}
       <Modal
-        title="Nova Cobrança"
+        title={
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text-primary)', fontWeight: 700 }}>
+            <CreditCardOutlined style={{ color: 'var(--primary-color)' }} />
+            Nova Cobrança
+          </span>
+        }
         open={showBillingModal}
         onCancel={() => setShowBillingModal(false)}
         footer={null}
@@ -380,13 +568,19 @@ export default function Payments() {
           </Form.Item>
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Space>
-              <Button onClick={() => setShowBillingModal(false)}>Cancelar</Button>
               <Button
-                type="primary"
-                htmlType="submit"
-                loading={billingLoading}
-                style={{ backgroundColor: '#059669', borderColor: '#059669' }}
+                onClick={() => setShowBillingModal(false)}
+                style={{
+                  height: 36,
+                  borderRadius: 8,
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-secondary)',
+                  background: 'var(--bg-surface)',
+                }}
               >
+                Cancelar
+              </Button>
+              <Button type="primary" htmlType="submit" loading={billingLoading}>
                 Criar Cobrança
               </Button>
             </Space>

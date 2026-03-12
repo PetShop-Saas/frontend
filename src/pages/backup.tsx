@@ -1,22 +1,28 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import { SaveOutlined } from '@ant-design/icons'
+import { Button, Card, Modal, Upload, Row, Col, message, Popconfirm, Tag } from 'antd'
+import {
+  SaveOutlined,
+  PlusOutlined,
+  DeleteOutlined,
+  UploadOutlined,
+  ReloadOutlined,
+  WarningOutlined,
+  CloudUploadOutlined,
+  FileTextOutlined,
+  ClockCircleOutlined,
+  DatabaseOutlined,
+} from '@ant-design/icons'
 import { apiService } from '../services/api'
+import PageHeader from '../components/common/PageHeader'
+import EmptyState from '../components/common/EmptyState'
+import { PageSkeleton } from '../components/common/PageSkeleton'
 
 interface Backup {
   filename: string
   size: number
   createdAt: string
   modifiedAt: string
-}
-
-interface BackupResult {
-  success: boolean
-  filename?: string
-  filepath?: string
-  size?: number
-  recordCount?: any
-  error?: string
 }
 
 export default function Backup() {
@@ -33,15 +39,16 @@ export default function Backup() {
       router.push('/login')
       return
     }
-
     loadBackups()
-  }, [router])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const loadBackups = async () => {
     try {
+      setLoading(true)
       const data = await apiService.getBackups()
       setBackups(data as any)
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false)
     }
@@ -52,13 +59,15 @@ export default function Backup() {
       setCreating(true)
       const result = await apiService.createBackup()
       if ((result as any).success) {
-        alert(`Backup criado com sucesso!\nArquivo: ${(result as any).filename}\nTamanho: ${((result as any).size / 1024).toFixed(2)} KB`)
+        message.success(
+          `Backup criado! Arquivo: ${(result as any).filename} (${formatFileSize((result as any).size)})`
+        )
         await loadBackups()
       } else {
-        alert('Erro ao criar backup')
+        message.error('Erro ao criar backup')
       }
-    } catch (error) {
-      alert('Erro ao criar backup')
+    } catch {
+      message.error('Erro ao criar backup')
     } finally {
       setCreating(false)
     }
@@ -66,201 +75,381 @@ export default function Backup() {
 
   const handleRestoreBackup = async () => {
     if (!selectedFile) {
-      alert('Selecione um arquivo de backup')
+      message.warning('Selecione um arquivo de backup')
       return
     }
-
-    if (!confirm('ATENÇÃO: Esta ação irá substituir todos os dados atuais. Tem certeza que deseja continuar?')) {
-      return
-    }
-
     try {
       setRestoring(true)
       const text = await selectedFile.text()
       const backupData = JSON.parse(text)
-      
       const result = await apiService.restoreBackup(backupData)
       if ((result as any).success) {
-        alert('Backup restaurado com sucesso!')
+        message.success('Backup restaurado com sucesso!')
         setSelectedFile(null)
       } else {
-        alert('Erro ao restaurar backup')
+        message.error('Erro ao restaurar backup')
       }
-    } catch (error) {
-      alert('Erro ao restaurar backup')
+    } catch {
+      message.error('Erro ao processar o arquivo de backup')
     } finally {
       setRestoring(false)
     }
   }
 
   const handleDeleteBackup = async (filename: string) => {
-    if (!confirm('Tem certeza que deseja excluir este backup?')) {
-      return
-    }
-
     try {
       const result = await apiService.deleteBackup(filename)
       if ((result as any).success) {
-        alert('Backup excluído com sucesso!')
+        message.success('Backup excluído com sucesso!')
         await loadBackups()
       } else {
-        alert('Erro ao excluir backup')
+        message.error('Erro ao excluir backup')
       }
-    } catch (error) {
-      alert('Erro ao excluir backup')
+    } catch {
+      message.error('Erro ao excluir backup')
     }
   }
 
   const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes'
+    if (!bytes || bytes === 0) return '0 Bytes'
     const k = 1024
     const sizes = ['Bytes', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
-          <p className="mt-4 text-gray-600">Carregando...</p>
-        </div>
-      </div>
-    )
-  }
+  if (loading) return <PageSkeleton />
 
   return (
     <div>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Backup e Restore</h1>
-            <p className="text-gray-600">Gerencie os backups dos seus dados</p>
-          </div>
-          <button
-            onClick={handleCreateBackup}
-            disabled={creating}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
-          >
-            {creating ? 'Criando...' : 'Criar Backup'}
-          </button>
-        </div>
-
-        {/* Criar Backup */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Criar Novo Backup</h2>
-          <p className="text-gray-600 mb-4">
-            Crie um backup completo de todos os seus dados. O backup incluirá clientes, pets, agendamentos, produtos, vendas e todas as outras informações.
-          </p>
-          <button
-            onClick={handleCreateBackup}
-            disabled={creating}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50"
-          >
-            {creating ? 'Criando Backup...' : 'Criar Backup Agora'}
-          </button>
-        </div>
-
-        {/* Restaurar Backup */}
-        <div className="bg-white rounded-lg shadow-sm p-6">
-          <h2 className="text-lg font-medium text-gray-900 mb-4">Restaurar Backup</h2>
-          <p className="text-gray-600 mb-4">
-            <strong>ATENÇÃO:</strong> Restaurar um backup irá substituir todos os dados atuais. Esta ação não pode ser desfeita.
-          </p>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Selecionar Arquivo de Backup
-              </label>
-              <input
-                type="file"
-                accept=".json"
-                onChange={(e) => setSelectedFile(e.target.files?.[0] || null)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500"
-              />
-            </div>
-            <button
-              onClick={handleRestoreBackup}
-              disabled={restoring || !selectedFile}
-              className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50"
+      <PageHeader
+        title="Backup e Restore"
+        subtitle="Gerencie os backups e restaurações dos seus dados"
+        breadcrumb={[{ label: 'Backup e Restore' }]}
+        actions={
+          <>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={loadBackups}
+              loading={loading}
+              style={{
+                height: 36,
+                borderRadius: 8,
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-secondary)',
+                background: 'var(--bg-surface)',
+              }}
             >
-              {restoring ? 'Restaurando...' : 'Restaurar Backup'}
-            </button>
-          </div>
-        </div>
+              Atualizar
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={handleCreateBackup}
+              loading={creating}
+              style={{
+                height: 36,
+                borderRadius: 8,
+                background: 'var(--primary-color)',
+                border: 'none',
+                fontWeight: 600,
+              }}
+            >
+              Criar Backup
+            </Button>
+          </>
+        }
+      />
+
+      <div style={{ padding: '0 24px 24px' }}>
+        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+          {/* Card: Criar Backup */}
+          <Col xs={24} lg={12}>
+            <Card
+              title={
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <CloudUploadOutlined style={{ color: 'var(--primary-color)', fontSize: 16 }} />
+                  <span style={{ fontFamily: 'var(--display-family)', fontWeight: 700 }}>
+                    Criar Novo Backup
+                  </span>
+                </div>
+              }
+            >
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 20, lineHeight: 1.6 }}>
+                Crie um backup completo de todos os seus dados: clientes, pets, agendamentos, produtos, vendas e todas as demais informações.
+              </p>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '12px 16px',
+                background: 'rgba(4,120,87,0.06)',
+                borderRadius: 8,
+                border: '1px solid rgba(4,120,87,0.15)',
+                marginBottom: 20,
+              }}>
+                <DatabaseOutlined style={{ color: 'var(--primary-color)', fontSize: 16 }} />
+                <span style={{ fontSize: 13, color: '#047857', fontWeight: 500 }}>
+                  Backups são salvos com segurança no servidor
+                </span>
+              </div>
+              <Button
+                type="primary"
+                icon={<SaveOutlined />}
+                onClick={handleCreateBackup}
+                loading={creating}
+                size="large"
+                style={{
+                  background: 'var(--primary-color)',
+                  border: 'none',
+                  borderRadius: 8,
+                  fontWeight: 600,
+                  height: 40,
+                }}
+              >
+                {creating ? 'Criando Backup...' : 'Criar Backup Agora'}
+              </Button>
+            </Card>
+          </Col>
+
+          {/* Card: Restaurar Backup */}
+          <Col xs={24} lg={12}>
+            <Card
+              title={
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <UploadOutlined style={{ color: '#d97706', fontSize: 16 }} />
+                  <span style={{ fontFamily: 'var(--display-family)', fontWeight: 700 }}>
+                    Restaurar Backup
+                  </span>
+                </div>
+              }
+            >
+              <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 10,
+                padding: '12px 16px',
+                background: 'rgba(239,68,68,0.06)',
+                borderRadius: 8,
+                border: '1px solid rgba(239,68,68,0.15)',
+                marginBottom: 20,
+              }}>
+                <WarningOutlined style={{ color: '#ef4444', fontSize: 16, marginTop: 1, flexShrink: 0 }} />
+                <p style={{ margin: 0, fontSize: 12, color: '#dc2626', lineHeight: 1.5 }}>
+                  <strong>Atenção:</strong> Restaurar um backup irá substituir todos os dados atuais. Esta ação não pode ser desfeita.
+                </p>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{
+                  display: 'block',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: 'var(--text-secondary)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  marginBottom: 8,
+                }}>
+                  Arquivo de Backup (.json)
+                </label>
+                <input
+                  type="file"
+                  accept=".json"
+                  onChange={e => setSelectedFile(e.target.files?.[0] ?? null)}
+                  style={{
+                    width: '100%',
+                    fontSize: 13,
+                    color: 'var(--text-primary)',
+                    padding: '8px 12px',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 8,
+                    background: 'var(--bg-surface)',
+                    cursor: 'pointer',
+                  }}
+                />
+                {selectedFile && (
+                  <p style={{ margin: '6px 0 0', fontSize: 12, color: 'var(--text-tertiary)' }}>
+                    Arquivo selecionado: <strong>{selectedFile.name}</strong>
+                  </p>
+                )}
+              </div>
+
+              <Popconfirm
+                title="Restaurar Backup"
+                description="Esta ação substituirá TODOS os dados atuais. Tem certeza?"
+                onConfirm={handleRestoreBackup}
+                okText="Sim, restaurar"
+                cancelText="Cancelar"
+                okButtonProps={{ danger: true }}
+              >
+                <Button
+                  danger
+                  size="large"
+                  icon={<UploadOutlined />}
+                  loading={restoring}
+                  disabled={!selectedFile}
+                  style={{
+                    borderRadius: 8,
+                    fontWeight: 600,
+                    height: 40,
+                  }}
+                >
+                  {restoring ? 'Restaurando...' : 'Restaurar Backup'}
+                </Button>
+              </Popconfirm>
+            </Card>
+          </Col>
+        </Row>
 
         {/* Lista de Backups */}
-        <div className="bg-white rounded-lg shadow-sm">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Backups Disponíveis</h2>
-          </div>
-          {backups.length === 0 ? (
-            <div className="p-8 text-center">
-              <div className="text-gray-400 text-6xl mb-4"><SaveOutlined /></div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Nenhum backup
-              </h3>
-              <p className="text-gray-500">
-                Crie seu primeiro backup para proteger seus dados
-              </p>
+        <Card
+          title={
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <FileTextOutlined style={{ color: 'var(--primary-color)', fontSize: 16 }} />
+              <span style={{ fontFamily: 'var(--display-family)', fontWeight: 700 }}>
+                Backups Disponíveis
+              </span>
+              {backups.length > 0 && (
+                <span style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minWidth: 24,
+                  height: 20,
+                  padding: '0 7px',
+                  background: 'rgba(4,120,87,0.1)',
+                  color: '#047857',
+                  borderRadius: 20,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  marginLeft: 4,
+                }}>
+                  {backups.length}
+                </span>
+              )}
             </div>
+          }
+          style={{ marginBottom: 24 }}
+        >
+          {backups.length === 0 ? (
+            <EmptyState
+              icon={<SaveOutlined style={{ fontSize: 32 }} />}
+              title="Nenhum backup encontrado"
+              description="Crie seu primeiro backup para proteger seus dados"
+              actionLabel="Criar Backup"
+              onAction={handleCreateBackup}
+            />
           ) : (
-            <div className="divide-y divide-gray-200">
-              {backups.map((backup) => (
-                <div key={backup.filename} className="p-6 hover:bg-gray-50 transition-colors">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {backups.map(backup => (
+                <div
+                  key={backup.filename}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: '14px 16px',
+                    borderRadius: 10,
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--bg-elevated)',
+                    gap: 16,
+                    flexWrap: 'wrap',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 10,
+                      background: 'rgba(4,120,87,0.1)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'var(--primary-color)',
+                      fontSize: 18,
+                      flexShrink: 0,
+                    }}>
+                      <SaveOutlined />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{
+                        margin: 0,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: 'var(--text-primary)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                      }}>
                         {backup.filename}
-                      </h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-2">
-                        <div>
-                          <p className="text-sm text-gray-500">Tamanho</p>
-                          <p className="text-sm font-medium text-gray-900">
-                            {formatFileSize(backup.size)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Criado em</p>
-                          <p className="text-sm font-medium text-gray-900">
-                            {new Date(backup.createdAt).toLocaleString('pt-BR')}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-500">Modificado em</p>
-                          <p className="text-sm font-medium text-gray-900">
-                            {new Date(backup.modifiedAt).toLocaleString('pt-BR')}
-                          </p>
-                        </div>
+                      </p>
+                      <div style={{ display: 'flex', gap: 12, marginTop: 4, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <DatabaseOutlined style={{ fontSize: 11 }} />
+                          {formatFileSize(backup.size)}
+                        </span>
+                        <span style={{ fontSize: 11, color: 'var(--text-tertiary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <ClockCircleOutlined style={{ fontSize: 11 }} />
+                          {new Date(backup.createdAt).toLocaleString('pt-BR')}
+                        </span>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleDeleteBackup(backup.filename)}
-                        className="text-red-600 hover:text-red-800 text-sm font-medium"
-                      >
-                        Excluir
-                      </button>
-                    </div>
                   </div>
+
+                  <Popconfirm
+                    title="Excluir backup?"
+                    description="Esta ação não pode ser desfeita."
+                    onConfirm={() => handleDeleteBackup(backup.filename)}
+                    okText="Sim, excluir"
+                    cancelText="Cancelar"
+                    okButtonProps={{ danger: true }}
+                  >
+                    <Button
+                      type="text"
+                      danger
+                      icon={<DeleteOutlined />}
+                      style={{ height: 32, borderRadius: 6 }}
+                    >
+                      Excluir
+                    </Button>
+                  </Popconfirm>
                 </div>
               ))}
             </div>
           )}
-        </div>
+        </Card>
 
-        {/* Informações Importantes */}
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-          <h3 className="text-lg font-medium text-yellow-800 mb-2">
-            Informações Importantes
-          </h3>
-          <ul className="text-sm text-yellow-700 space-y-1">
-            <li>• Faça backups regularmente para proteger seus dados</li>
-            <li>• Os backups são salvos localmente no servidor</li>
-            <li>• Restaurar um backup substitui todos os dados atuais</li>
-            <li>• Mantenha cópias dos backups em local seguro</li>
-            <li>• Teste a restauração em ambiente de desenvolvimento antes de usar em produção</li>
+        {/* Dicas de uso */}
+        <div style={{
+          padding: '16px 20px',
+          borderRadius: 10,
+          background: 'rgba(245,158,11,0.06)',
+          border: '1px solid rgba(245,158,11,0.25)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+            <WarningOutlined style={{ color: '#d97706', fontSize: 16 }} />
+            <h3 style={{
+              margin: 0,
+              fontSize: 13,
+              fontWeight: 700,
+              color: '#92400e',
+              fontFamily: 'var(--display-family)',
+            }}>
+              Boas práticas de Backup
+            </h3>
+          </div>
+          <ul style={{ margin: 0, paddingLeft: 18 }}>
+            {[
+              'Faça backups regularmente para proteger seus dados',
+              'Os backups são salvos localmente no servidor',
+              'Restaurar um backup substitui todos os dados atuais',
+              'Mantenha cópias dos backups em local seguro externo',
+              'Teste a restauração em ambiente de desenvolvimento antes de usar em produção',
+            ].map((tip, i) => (
+              <li key={i} style={{ fontSize: 12, color: '#92400e', lineHeight: 1.8 }}>
+                {tip}
+              </li>
+            ))}
           </ul>
         </div>
       </div>

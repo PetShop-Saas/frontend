@@ -2,19 +2,34 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { apiService } from '../services/api'
 import {
+  Row,
+  Col,
+  Table,
+  Button,
+  Modal,
+  Form,
+  Input,
+  Switch,
+  Tag,
+  Space,
+  Popconfirm,
+} from 'antd'
+import {
   BarChartOutlined,
   UserOutlined,
   ShopOutlined,
   HeartOutlined,
-  CalendarOutlined,
   DollarOutlined,
   TeamOutlined,
   EyeOutlined,
   EditOutlined,
   DeleteOutlined,
   PlusOutlined,
-  ReloadOutlined
+  ReloadOutlined,
 } from '@ant-design/icons'
+import PageHeader from '../components/common/PageHeader'
+import PageSkeleton from '../components/common/PageSkeleton'
+import StatsCard from '../components/common/StatsCard'
 
 interface GlobalStats {
   totalTenants: number
@@ -56,6 +71,9 @@ export default function AdminDashboard() {
   const [newTenant, setNewTenant] = useState({ name: '', subdomain: '', isActive: true })
   const router = useRouter()
 
+  // suppress unused warning — selectedTenant reserved for future view modal
+  void selectedTenant
+
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user') || '{}')
     if (user.role !== 'ADMIN') {
@@ -68,20 +86,20 @@ export default function AdminDashboard() {
   const loadData = async () => {
     try {
       setLoading(true)
-      const [dashboardData, tenantsData, billingData, billingRevData, analyticsData] = await Promise.all([
+      const [dashboardData, , billingData, billingRevData, analyticsData] = await Promise.all([
         apiService.getAdminDashboard(),
         apiService.getAllTenants(),
         apiService.getAdminBillingOverview(),
         apiService.getAdminRevenueStats(),
-        apiService.getAdminAnalytics()
+        apiService.getAdminAnalytics(),
       ])
-      
+
       setGlobalStats((dashboardData as any).overview)
       setBillingOverview(billingData as any)
       setBillingRevenueStats(billingRevData as any)
       setAnalytics(analyticsData as any)
       setTenants((dashboardData as any).tenantStats)
-    } catch (error) {
+    } catch {
     } finally {
       setLoading(false)
     }
@@ -93,48 +111,183 @@ export default function AdminDashboard() {
       setNewTenant({ name: '', subdomain: '', isActive: true })
       setShowTenantModal(false)
       loadData()
-    } catch (error) {
+    } catch {
     }
   }
 
   const handleUpdateTenant = async () => {
     if (!editingTenant) return
-    
+
     try {
       await apiService.updateTenant(editingTenant.id, {
         name: editingTenant.name,
         subdomain: editingTenant.subdomain,
-        isActive: editingTenant.isActive
+        isActive: editingTenant.isActive,
       })
       setEditingTenant(null)
       loadData()
-    } catch (error) {
+    } catch {
     }
   }
 
   const handleDeleteTenant = async (tenantId: string) => {
-    if (!confirm('Tem certeza que deseja excluir este petshop? Esta ação não pode ser desfeita.')) return
-    
     try {
       await apiService.deleteTenant(tenantId)
       loadData()
-    } catch (error) {
+    } catch {
     }
   }
 
   const handleViewTenantData = async (tenantId: string) => {
     try {
-      const tenantData = await apiService.getTenantData(tenantId)
-      // Aqui você pode implementar uma modal ou página para visualizar os dados
-    } catch (error) {
+      const data = await apiService.getTenantData(tenantId)
+      setSelectedTenant(data as unknown as Tenant)
+    } catch {
     }
+  }
+
+  const tenantColumns = [
+    {
+      title: 'Petshop',
+      key: 'petshop',
+      render: (_: unknown, record: Tenant) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              background: 'rgba(16,185,129,0.12)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}
+          >
+            <ShopOutlined style={{ color: '#10b981', fontSize: 18 }} />
+          </div>
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>
+              {record.name}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-tertiary)', marginTop: 2 }}>
+              Criado em {new Date(record.createdAt).toLocaleDateString('pt-BR')}
+            </div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      title: 'Subdomínio',
+      dataIndex: 'subdomain',
+      key: 'subdomain',
+      render: (subdomain: string) => (
+        <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>{subdomain}</span>
+      ),
+    },
+    {
+      title: 'Status',
+      dataIndex: 'isActive',
+      key: 'isActive',
+      render: (isActive: boolean) => (
+        <Tag color={isActive ? 'success' : 'error'}>{isActive ? 'Ativo' : 'Inativo'}</Tag>
+      ),
+    },
+    {
+      title: 'Estatísticas',
+      key: 'stats',
+      render: (_: unknown, record: Tenant) => (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2px 16px' }}>
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+            Usuários: {record.stats.users}
+          </span>
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+            Pets: {record.stats.pets}
+          </span>
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+            Agendamentos: {record.stats.appointments}
+          </span>
+          <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+            Vendas: {record.stats.sales}
+          </span>
+        </div>
+      ),
+    },
+    {
+      title: 'Ações',
+      key: 'actions',
+      render: (_: unknown, record: Tenant) => (
+        <Space size="small">
+          <Button
+            type="text"
+            icon={<EyeOutlined />}
+            onClick={() => handleViewTenantData(record.id)}
+            style={{ color: 'var(--primary-color)' }}
+            title="Ver dados"
+          />
+          <Button
+            type="text"
+            icon={<EditOutlined />}
+            onClick={() => setEditingTenant(record)}
+            style={{ color: 'var(--primary-color)' }}
+            title="Editar"
+          />
+          <Popconfirm
+            title="Tem certeza que deseja excluir este petshop?"
+            description="Esta ação não pode ser desfeita."
+            onConfirm={() => handleDeleteTenant(record.id)}
+            okText="Sim, excluir"
+            cancelText="Cancelar"
+            okButtonProps={{ danger: true }}
+          >
+            <Button type="text" danger icon={<DeleteOutlined />} title="Excluir" />
+          </Popconfirm>
+        </Space>
+      ),
+    },
+  ]
+
+  const thStyle: React.CSSProperties = {
+    padding: '10px 16px',
+    textAlign: 'left',
+    fontSize: 11,
+    fontWeight: 700,
+    color: 'var(--text-tertiary)',
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    background: 'var(--bg-elevated)',
+    whiteSpace: 'nowrap',
+  }
+
+  const tdStyle: React.CSSProperties = {
+    padding: '12px 16px',
+    whiteSpace: 'nowrap',
+    fontSize: 13,
+    color: 'var(--text-primary)',
+    borderTop: '1px solid var(--border-subtle)',
+  }
+
+  const modalTitleStyle: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 8,
+  }
+
+  const modalTitleTextStyle: React.CSSProperties = {
+    fontFamily: 'var(--display-family)',
+    fontWeight: 700,
   }
 
   if (loading) {
     return (
       <div>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
+        <PageHeader
+          title="Painel Administrativo"
+          subtitle="Visão geral do sistema e gestão de tenants"
+          breadcrumb={[{ label: 'Admin' }]}
+        />
+        <div style={{ padding: '0 24px 24px' }}>
+          <PageSkeleton type="dashboard" />
         </div>
       </div>
     )
@@ -142,141 +295,148 @@ export default function AdminDashboard() {
 
   return (
     <div>
-      <div className="p-6">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard Administrativo</h1>
-          <p className="text-gray-600">Gerencie todos os petshops do sistema</p>
-        </div>
+      <PageHeader
+        title="Painel Administrativo"
+        subtitle="Visão geral do sistema e gestão de tenants"
+        breadcrumb={[{ label: 'Admin' }]}
+        actions={
+          <>
+            <Button
+              icon={<ReloadOutlined />}
+              onClick={loadData}
+              style={{
+                height: 36,
+                borderRadius: 8,
+                border: '1px solid var(--border-color)',
+                color: 'var(--text-secondary)',
+                background: 'var(--bg-surface)',
+              }}
+            >
+              Atualizar
+            </Button>
+            <Button
+              type="primary"
+              icon={<PlusOutlined />}
+              onClick={() => setShowTenantModal(true)}
+              style={{ height: 36, borderRadius: 8, fontWeight: 600 }}
+            >
+              Novo Petshop
+            </Button>
+          </>
+        }
+      />
 
-        {/* Estatísticas Globais - separadas por origem */}
+      <div style={{ padding: '0 24px 24px' }}>
+        {/* Estatísticas Globais */}
         {globalStats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-blue-100 text-blue-600">
-                  <ShopOutlined className="text-xl" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Petshops</p>
-                  <p className="text-2xl font-bold text-gray-900">{globalStats.totalTenants}</p>
-                  <p className="text-xs text-green-600">{globalStats.activeTenants} ativos</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-green-100 text-green-600">
-                  <UserOutlined className="text-xl" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Usuários</p>
-                  <p className="text-2xl font-bold text-gray-900">{globalStats.totalUsers}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-purple-100 text-purple-600">
-                  <HeartOutlined className="text-xl" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Total Pets</p>
-                  <p className="text-2xl font-bold text-gray-900">{globalStats.totalPets}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Receita de Vendas (operacional) */}
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-yellow-100 text-yellow-600">
-                  <DollarOutlined className="text-xl" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Receita de Vendas</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    R$ {globalStats.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </p>
-                  <p className="text-xs text-gray-500">Soma de vendas dos petshops (sales)</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            <Col xs={24} sm={12} lg={6}>
+              <StatsCard
+                title="Total Petshops"
+                value={globalStats.totalTenants}
+                icon={<ShopOutlined />}
+                iconColor="#2563eb"
+              />
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <StatsCard
+                title="Total Usuários"
+                value={globalStats.totalUsers}
+                icon={<UserOutlined />}
+                iconColor="#059669"
+              />
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <StatsCard
+                title="Total Pets"
+                value={globalStats.totalPets}
+                icon={<HeartOutlined />}
+                iconColor="#7c3aed"
+              />
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <StatsCard
+                title="Receita de Vendas"
+                value={`R$ ${globalStats.totalRevenue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                icon={<DollarOutlined />}
+                iconColor="#d97706"
+              />
+            </Col>
+          </Row>
         )}
 
         {/* Métricas de Assinatura (Billing) */}
         {billingOverview && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-yellow-100 text-yellow-600">
-                  <DollarOutlined className="text-xl" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Receita de Assinaturas</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    R$ {(billingOverview.totalRevenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </p>
-                  <p className="text-xs text-gray-500">Total pago (billing_history PAID)</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-blue-100 text-blue-600">
-                  <BarChartOutlined className="text-xl" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">MRR (Recorrente)</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    R$ {(billingOverview.monthlyRecurringRevenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </p>
-                  <p className="text-xs text-gray-500">Soma de monthlyPrice de tenants ativos</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-red-100 text-red-600">
-                  <DollarOutlined className="text-xl" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Assinaturas Pendentes</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    R$ {(billingOverview.pendingAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </p>
-                  <p className="text-xs text-gray-500">Total a receber (billing_history PENDING)</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center">
-                <div className="p-3 rounded-full bg-green-100 text-green-600">
-                  <TeamOutlined className="text-xl" />
-                </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">Tenants Ativos</p>
-                  <p className="text-2xl font-bold text-gray-900">{billingOverview.activeTenants}</p>
-                  <p className="text-xs text-gray-500">Base para a recorrência</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+            <Col xs={24} sm={12} lg={6}>
+              <StatsCard
+                title="Receita de Assinaturas"
+                value={`R$ ${(billingOverview.totalRevenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                icon={<DollarOutlined />}
+                iconColor="#d97706"
+              />
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <StatsCard
+                title="MRR (Recorrente)"
+                value={`R$ ${(billingOverview.monthlyRecurringRevenue || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                icon={<BarChartOutlined />}
+                iconColor="#2563eb"
+              />
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <StatsCard
+                title="Assinaturas Pendentes"
+                value={`R$ ${(billingOverview.pendingAmount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                icon={<DollarOutlined />}
+                iconColor="#dc2626"
+              />
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+              <StatsCard
+                title="Tenants Ativos"
+                value={billingOverview.activeTenants}
+                icon={<TeamOutlined />}
+                iconColor="#059669"
+              />
+            </Col>
+          </Row>
         )}
 
-        {/* Análises Mensais (últimos 12 meses) */}
+        {/* Análises Mensais */}
         {analytics && billingRevenueStats && (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-8">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">Análises Mensais</h2>
-              <p className="text-gray-600 text-sm">Comparativo de Vendas x Assinaturas e crescimento</p>
+          <div
+            style={{
+              background: 'var(--bg-surface)',
+              borderRadius: 12,
+              border: '1px solid var(--border-color)',
+              boxShadow: 'var(--shadow-sm)',
+              marginBottom: 24,
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              style={{
+                padding: '16px 20px',
+                borderBottom: '1px solid var(--border-color)',
+              }}
+            >
+              <h2
+                style={{
+                  fontFamily: 'var(--display-family)',
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: 'var(--text-primary)',
+                  margin: 0,
+                }}
+              >
+                Análises Mensais
+              </h2>
+              <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+                Comparativo de Vendas x Assinaturas e crescimento
+              </p>
             </div>
-            <div className="p-6 overflow-x-auto">
+            <div style={{ padding: 20, overflowX: 'auto' }}>
               {(() => {
                 const salesMonthly = analytics.monthlyRevenue || {}
                 const billingMonthly = billingRevenueStats.monthlyRevenue || {}
@@ -289,60 +449,76 @@ export default function AdminDashboard() {
                   ...Object.keys(billingMonthly),
                   ...Object.keys(tenantGrowth),
                   ...Object.keys(userGrowth),
-                  ...Object.keys(appointmentTrends)
+                  ...Object.keys(appointmentTrends),
                 ])
                 const months = Array.from(monthsSet)
-                  .filter(m => /^\d{4}-\d{2}$/.test(m))
+                  .filter((m) => /^\d{4}-\d{2}$/.test(m))
                   .sort()
 
-                const formatBRL = (n: number) => `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                const formatBRL = (n: number) =>
+                  `R$ ${n.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
 
                 let prevSales: number | null = null
                 let prevBilling: number | null = null
 
                 return (
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                  <table style={{ minWidth: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Mês</th>
-                        <th title="Soma de vendas (sales.total)" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendas</th>
-                        <th title="Assinaturas pagas (billing_history PAID)" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assinaturas</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Diferença</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vendas %</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Assin. %</th>
-                        <th title="Novos tenants criados no mês" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Novos Tenants</th>
-                        <th title="Novos usuários criados no mês" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Novos Usuários</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Agend. Totais</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Concluídos</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pendentes</th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cancelados</th>
+                        <th style={thStyle}>Mês</th>
+                        <th title="Soma de vendas (sales.total)" style={thStyle}>Vendas</th>
+                        <th title="Assinaturas pagas (billing_history PAID)" style={thStyle}>Assinaturas</th>
+                        <th style={thStyle}>Diferença</th>
+                        <th style={thStyle}>Vendas %</th>
+                        <th style={thStyle}>Assin. %</th>
+                        <th title="Novos tenants criados no mês" style={thStyle}>Novos Tenants</th>
+                        <th title="Novos usuários criados no mês" style={thStyle}>Novos Usuários</th>
+                        <th style={thStyle}>Agend. Totais</th>
+                        <th style={thStyle}>Concluídos</th>
+                        <th style={thStyle}>Pendentes</th>
+                        <th style={thStyle}>Cancelados</th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody>
                       {months.map((m) => {
                         const s = Number(salesMonthly[m] || 0)
                         const b = Number(billingMonthly[m] || 0)
                         const diff = s - b
-                        const salesPct = prevSales !== null && prevSales !== 0 ? ((s - prevSales) / prevSales) * 100 : null
-                        const billingPct = prevBilling !== null && prevBilling !== 0 ? ((b - prevBilling) / prevBilling) * 100 : null
+                        const salesPct =
+                          prevSales !== null && prevSales !== 0
+                            ? ((s - prevSales) / prevSales) * 100
+                            : null
+                        const billingPct =
+                          prevBilling !== null && prevBilling !== 0
+                            ? ((b - prevBilling) / prevBilling) * 100
+                            : null
                         const t = Number(tenantGrowth[m] || 0)
                         const u = Number(userGrowth[m] || 0)
-                        const a = appointmentTrends[m] || { total: 0, completed: 0, pending: 0, cancelled: 0 }
+                        const a = appointmentTrends[m] || {
+                          total: 0,
+                          completed: 0,
+                          pending: 0,
+                          cancelled: 0,
+                        }
 
                         const row = (
                           <tr key={m}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{m}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatBRL(s)}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatBRL(b)}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{formatBRL(diff)}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{salesPct === null ? '-' : `${salesPct.toFixed(1)}%`}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{billingPct === null ? '-' : `${billingPct.toFixed(1)}%`}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{t}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{u}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{a.total}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{a.completed}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{a.pending}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{a.cancelled}</td>
+                            <td style={tdStyle}>{m}</td>
+                            <td style={tdStyle}>{formatBRL(s)}</td>
+                            <td style={tdStyle}>{formatBRL(b)}</td>
+                            <td style={tdStyle}>{formatBRL(diff)}</td>
+                            <td style={tdStyle}>
+                              {salesPct === null ? '-' : `${salesPct.toFixed(1)}%`}
+                            </td>
+                            <td style={tdStyle}>
+                              {billingPct === null ? '-' : `${billingPct.toFixed(1)}%`}
+                            </td>
+                            <td style={tdStyle}>{t}</td>
+                            <td style={tdStyle}>{u}</td>
+                            <td style={tdStyle}>{a.total}</td>
+                            <td style={tdStyle}>{a.completed}</td>
+                            <td style={tdStyle}>{a.pending}</td>
+                            <td style={tdStyle}>{a.cancelled}</td>
                           </tr>
                         )
 
@@ -359,233 +535,125 @@ export default function AdminDashboard() {
         )}
 
         {/* Gestão de Petshops */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Gestão de Petshops</h2>
-                <p className="text-gray-600">Gerencie todos os petshops cadastrados no sistema</p>
-              </div>
-              <div className="flex space-x-3">
-                <button
-                  onClick={() => setShowTenantModal(true)}
-                  className="inline-flex items-center px-4 py-2 border border-transparent rounded-lg text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                >
-                  <PlusOutlined className="mr-2" />
-                  Novo Petshop
-                </button>
-                <button
-                  onClick={loadData}
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                >
-                  <ReloadOutlined className="mr-2" />
-                  Atualizar
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Petshop
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Subdomínio
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Estatísticas
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ações
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {tenants.map((tenant) => (
-                  <tr key={tenant.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10">
-                          <div className="h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
-                            <ShopOutlined className="h-5 w-5 text-green-600" />
-                          </div>
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{tenant.name}</div>
-                          <div className="text-sm text-gray-500">
-                            Criado em {new Date(tenant.createdAt).toLocaleDateString('pt-BR')}
-                          </div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {tenant.subdomain}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        tenant.isActive 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {tenant.isActive ? 'Ativo' : 'Inativo'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>Usuários: {tenant.stats.users}</div>
-                        <div>Pets: {tenant.stats.pets}</div>
-                        <div>Agendamentos: {tenant.stats.appointments}</div>
-                        <div>Vendas: {tenant.stats.sales}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleViewTenantData(tenant.id)}
-                          className="text-blue-600 hover:text-blue-900"
-                          title="Ver dados"
-                        >
-                          <EyeOutlined />
-                        </button>
-                        <button
-                          onClick={() => setEditingTenant(tenant)}
-                          className="text-green-600 hover:text-green-900"
-                          title="Editar"
-                        >
-                          <EditOutlined />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteTenant(tenant.id)}
-                          className="text-red-600 hover:text-red-900"
-                          title="Excluir"
-                        >
-                          <DeleteOutlined />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+        <div style={{ marginBottom: 16 }}>
+          <h2
+            style={{
+              fontFamily: 'var(--display-family)',
+              fontSize: 18,
+              fontWeight: 700,
+              color: 'var(--text-primary)',
+              margin: 0,
+            }}
+          >
+            Gestão de Petshops
+          </h2>
+          <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '4px 0 0' }}>
+            Gerencie todos os petshops cadastrados no sistema
+          </p>
         </div>
 
-        {/* Modal para criar novo petshop */}
-        {showTenantModal && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-              <div className="mt-3">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Novo Petshop</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Nome</label>
-                    <input
-                      type="text"
-                      value={newTenant.name}
-                      onChange={(e) => setNewTenant({ ...newTenant, name: e.target.value })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-green-500 focus:border-green-500"
-                      placeholder="Nome do petshop"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Subdomínio</label>
-                    <input
-                      type="text"
-                      value={newTenant.subdomain}
-                      onChange={(e) => setNewTenant({ ...newTenant, subdomain: e.target.value })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-green-500 focus:border-green-500"
-                      placeholder="subdominio"
-                    />
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={newTenant.isActive}
-                      onChange={(e) => setNewTenant({ ...newTenant, isActive: e.target.checked })}
-                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                    />
-                    <label className="ml-2 block text-sm text-gray-900">Ativo</label>
-                  </div>
-                </div>
-                <div className="flex justify-end space-x-3 mt-6">
-                  <button
-                    onClick={() => setShowTenantModal(false)}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={handleCreateTenant}
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                  >
-                    Criar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Modal para editar petshop */}
-        {editingTenant && (
-          <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-              <div className="mt-3">
-                <h3 className="text-lg font-medium text-gray-900 mb-4">Editar Petshop</h3>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Nome</label>
-                    <input
-                      type="text"
-                      value={editingTenant.name}
-                      onChange={(e) => setEditingTenant({ ...editingTenant, name: e.target.value })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-green-500 focus:border-green-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Subdomínio</label>
-                    <input
-                      type="text"
-                      value={editingTenant.subdomain}
-                      onChange={(e) => setEditingTenant({ ...editingTenant, subdomain: e.target.value })}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-green-500 focus:border-green-500"
-                    />
-                  </div>
-                  <div className="flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={editingTenant.isActive}
-                      onChange={(e) => setEditingTenant({ ...editingTenant, isActive: e.target.checked })}
-                      className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                    />
-                    <label className="ml-2 block text-sm text-gray-900">Ativo</label>
-                  </div>
-                </div>
-                <div className="flex justify-end space-x-3 mt-6">
-                  <button
-                    onClick={() => setEditingTenant(null)}
-                    className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    onClick={handleUpdateTenant}
-                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                  >
-                    Salvar
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+        <div
+          style={{
+            border: '1px solid var(--border-color)',
+            borderRadius: 12,
+            boxShadow: 'var(--shadow-sm)',
+            overflow: 'hidden',
+          }}
+        >
+          <Table
+            columns={tenantColumns}
+            dataSource={tenants}
+            rowKey="id"
+            pagination={{ pageSize: 10 }}
+          />
+        </div>
       </div>
+
+      {/* Modal: Novo Petshop */}
+      <Modal
+        title={
+          <span style={modalTitleStyle}>
+            <ShopOutlined style={{ color: 'var(--primary-color)' }} />
+            <span style={modalTitleTextStyle}>Novo Petshop</span>
+          </span>
+        }
+        open={showTenantModal}
+        onOk={handleCreateTenant}
+        onCancel={() => setShowTenantModal(false)}
+        okText="Criar"
+        cancelText="Cancelar"
+      >
+        <Form layout="vertical" style={{ marginTop: 8 }}>
+          <Form.Item label="Nome">
+            <Input
+              value={newTenant.name}
+              onChange={(e) => setNewTenant({ ...newTenant, name: e.target.value })}
+              placeholder="Nome do petshop"
+            />
+          </Form.Item>
+          <Form.Item label="Subdomínio">
+            <Input
+              value={newTenant.subdomain}
+              onChange={(e) => setNewTenant({ ...newTenant, subdomain: e.target.value })}
+              placeholder="subdominio"
+            />
+          </Form.Item>
+          <Form.Item label="Status">
+            <Switch
+              checked={newTenant.isActive}
+              onChange={(checked) => setNewTenant({ ...newTenant, isActive: checked })}
+              checkedChildren="Ativo"
+              unCheckedChildren="Inativo"
+            />
+          </Form.Item>
+        </Form>
+      </Modal>
+
+      {/* Modal: Editar Petshop */}
+      <Modal
+        title={
+          <span style={modalTitleStyle}>
+            <EditOutlined style={{ color: 'var(--primary-color)' }} />
+            <span style={modalTitleTextStyle}>Editar Petshop</span>
+          </span>
+        }
+        open={!!editingTenant}
+        onOk={handleUpdateTenant}
+        onCancel={() => setEditingTenant(null)}
+        okText="Salvar"
+        cancelText="Cancelar"
+      >
+        {editingTenant && (
+          <Form layout="vertical" style={{ marginTop: 8 }}>
+            <Form.Item label="Nome">
+              <Input
+                value={editingTenant.name}
+                onChange={(e) =>
+                  setEditingTenant({ ...editingTenant, name: e.target.value })
+                }
+              />
+            </Form.Item>
+            <Form.Item label="Subdomínio">
+              <Input
+                value={editingTenant.subdomain}
+                onChange={(e) =>
+                  setEditingTenant({ ...editingTenant, subdomain: e.target.value })
+                }
+              />
+            </Form.Item>
+            <Form.Item label="Status">
+              <Switch
+                checked={editingTenant.isActive}
+                onChange={(checked) =>
+                  setEditingTenant({ ...editingTenant, isActive: checked })
+                }
+                checkedChildren="Ativo"
+                unCheckedChildren="Inativo"
+              />
+            </Form.Item>
+          </Form>
+        )}
+      </Modal>
     </div>
   )
 }

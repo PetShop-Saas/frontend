@@ -442,10 +442,18 @@ export default function Pets() {
                 <Form.Item
                   name="age"
                   label="Idade (anos)"
+                  rules={[{
+                    validator: (_, value) => {
+                      if (value === undefined || value === null) return Promise.resolve()
+                      if (value < 0) return Promise.reject(new Error('Idade não pode ser negativa'))
+                      if (value > 50) return Promise.reject(new Error('Idade máxima é 50 anos'))
+                      return Promise.resolve()
+                    }
+                  }]}
                 >
                   <InputNumber
                     min={0}
-                    max={30}
+                    max={50}
                     placeholder="Ex: 3"
                     style={{ width: '100%' }}
                   />
@@ -455,9 +463,18 @@ export default function Pets() {
                 <Form.Item
                   name="weight"
                   label="Peso (kg)"
+                  rules={[{
+                    validator: (_, value) => {
+                      if (value === undefined || value === null) return Promise.resolve()
+                      if (value < 0.01) return Promise.reject(new Error('Peso mínimo é 0.01 kg'))
+                      if (value > 500) return Promise.reject(new Error('Peso máximo é 500 kg'))
+                      return Promise.resolve()
+                    }
+                  }]}
                 >
                   <InputNumber
-                    min={0}
+                    min={0.01}
+                    max={500}
                     step={0.1}
                     placeholder="Ex: 25.5"
                     style={{ width: '100%' }}

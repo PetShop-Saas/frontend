@@ -576,13 +576,14 @@ export default function Sales() {
                 <Form.Item
                   name="totalAmount"
                   label="Valor Total (R$)"
-                  rules={[{ required: true, message: 'Por favor, insira o valor total!' }]}
+                  rules={[{ required: true, message: 'Por favor, selecione os produtos para calcular o total!' }]}
                 >
                   <InputNumber
-                    placeholder="0.00"
+                    placeholder="Calculado automaticamente"
                     min={0}
                     step={0.01}
                     style={{ width: '100%' }}
+                    disabled
                     formatter={value => `R$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                     parser={(value: any) => value!.replace(/R\$\s?|(,*)/g, '')}
                   />
@@ -600,6 +601,13 @@ export default function Sales() {
                 placeholder="Selecione os produtos"
                 showSearch
                 optionFilterProp="children"
+                onChange={(selectedIds: string[]) => {
+                  const total = selectedIds.reduce((sum, id) => {
+                    const product = products.find(p => p.id === id)
+                    return sum + (product ? Number(product.price ?? 0) : 0)
+                  }, 0)
+                  form.setFieldsValue({ totalAmount: Number(total.toFixed(2)) })
+                }}
               >
                 {products.map(product => (
                   <Option key={product.id} value={product.id}>

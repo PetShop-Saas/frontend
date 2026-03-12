@@ -166,7 +166,19 @@ export default function CashFlow() {
     {
       title: 'Método Pagamento',
       dataIndex: 'paymentMethod',
-      key: 'paymentMethod'
+      key: 'paymentMethod',
+      render: (method: string) => {
+        const paymentMethodLabels: Record<string, string> = {
+          CASH: 'Dinheiro',
+          CREDIT_CARD: 'Cartão de Crédito',
+          DEBIT_CARD: 'Cartão de Débito',
+          PIX: 'PIX',
+          BANK_TRANSFER: 'Transferência Bancária',
+          TRANSFER: 'Transferência Bancária',
+          CHECK: 'Cheque',
+        }
+        return paymentMethodLabels[method] || method || '-'
+      }
     },
     {
       title: 'Descrição',
@@ -322,16 +334,18 @@ export default function CashFlow() {
               />
             </Form.Item>
 
-            <Form.Item 
-              name="paymentMethod" 
+            <Form.Item
+              name="paymentMethod"
               label="Método de Pagamento"
+              rules={[{ required: true, message: 'Selecione o método de pagamento' }]}
             >
               <Select placeholder="Selecione">
                 <Option value="CASH">Dinheiro</Option>
                 <Option value="CREDIT_CARD">Cartão de Crédito</Option>
                 <Option value="DEBIT_CARD">Cartão de Débito</Option>
                 <Option value="PIX">PIX</Option>
-                <Option value="TRANSFER">Transferência</Option>
+                <Option value="BANK_TRANSFER">Transferência Bancária</Option>
+                <Option value="CHECK">Cheque</Option>
               </Select>
             </Form.Item>
 

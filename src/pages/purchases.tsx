@@ -32,7 +32,8 @@ import {
   CloseCircleOutlined,
   ClockCircleOutlined,
   ShopOutlined,
-  DollarOutlined
+  DollarOutlined,
+  MinusCircleOutlined
 } from '@ant-design/icons'
 import { PURCHASE_STATUS_OPTIONS, getTagOption, TAG_CLASS } from '../constants/tagConfig'
 import dayjs from 'dayjs'
@@ -567,19 +568,135 @@ export default function Purchases() {
                 <Form.Item
                   name="total"
                   label="Valor Total (R$)"
-                  rules={[{ required: true, message: 'Por favor, insira o valor total!' }]}
+                  rules={[{ required: true, message: 'Adicione pelo menos um produto para calcular o total!' }]}
                 >
                   <InputNumber
-                    placeholder="0.00"
+                    placeholder="Calculado automaticamente"
                     min={0}
                     step={0.01}
                     style={{ width: '100%' }}
+                    disabled
                     formatter={value => `R$ ${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                     parser={(value: any) => value!.replace(/R\$\s?|(,*)/g, '')}
                   />
                 </Form.Item>
               </Col>
             </Row>
+
+            <div className="mb-4">
+              <div className="font-medium text-gray-700 mb-2">Produtos</div>
+              <Form.List name="items">
+                {(fields, { add, remove }) => (
+                  <>
+                    {fields.map(({ key, name, ...restField }) => (
+                      <Row key={key} gutter={8} className="mb-2 items-center">
+                        <Col span={10}>
+                          <Form.Item
+                            {...restField}
+                            name={[name, 'productId']}
+                            rules={[{ required: true, message: 'Selecione o produto' }]}
+                            className="mb-0"
+                          >
+                            <Select
+                              placeholder="Produto"
+                              showSearch
+                              optionFilterProp="children"
+                              onChange={() => {
+                                const items = form.getFieldValue('items') || []
+                                const total = items.reduce((sum: number, item: any) => {
+                                  if (!item) return sum
+                                  return sum + (Number(item.quantity ?? 1) * Number(item.unitPrice ?? 0))
+                                }, 0)
+                                form.setFieldsValue({ total: Number(total.toFixed(2)) })
+                              }}
+                            >
+                              {products.map(product => (
+                                <Option key={product.id} value={product.id}>
+                                  {product.name}
+                                </Option>
+                              ))}
+                            </Select>
+                          </Form.Item>
+                        </Col>
+                        <Col span={5}>
+                          <Form.Item
+                            {...restField}
+                            name={[name, 'quantity']}
+                            rules={[{ required: true, message: 'Qtd' }]}
+                            className="mb-0"
+                          >
+                            <InputNumber
+                              placeholder="Qtd"
+                              min={1}
+                              style={{ width: '100%' }}
+                              onChange={() => {
+                                const items = form.getFieldValue('items') || []
+                                const total = items.reduce((sum: number, item: any) => {
+                                  if (!item) return sum
+                                  return sum + (Number(item.quantity ?? 1) * Number(item.unitPrice ?? 0))
+                                }, 0)
+                                form.setFieldsValue({ total: Number(total.toFixed(2)) })
+                              }}
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col span={7}>
+                          <Form.Item
+                            {...restField}
+                            name={[name, 'unitPrice']}
+                            rules={[{ required: true, message: 'Preço' }]}
+                            className="mb-0"
+                          >
+                            <InputNumber
+                              placeholder="Preço unit."
+                              min={0}
+                              step={0.01}
+                              style={{ width: '100%' }}
+                              formatter={value => `R$ ${value}`}
+                              parser={(value: any) => value!.replace(/R\$\s?/g, '')}
+                              onChange={() => {
+                                const items = form.getFieldValue('items') || []
+                                const total = items.reduce((sum: number, item: any) => {
+                                  if (!item) return sum
+                                  return sum + (Number(item.quantity ?? 1) * Number(item.unitPrice ?? 0))
+                                }, 0)
+                                form.setFieldsValue({ total: Number(total.toFixed(2)) })
+                              }}
+                            />
+                          </Form.Item>
+                        </Col>
+                        <Col span={2}>
+                          <Button
+                            type="text"
+                            icon={<MinusCircleOutlined />}
+                            onClick={() => {
+                              remove(name)
+                              setTimeout(() => {
+                                const items = form.getFieldValue('items') || []
+                                const total = items.reduce((sum: number, item: any) => {
+                                  if (!item) return sum
+                                  return sum + (Number(item.quantity ?? 1) * Number(item.unitPrice ?? 0))
+                                }, 0)
+                                form.setFieldsValue({ total: Number(total.toFixed(2)) })
+                              }, 0)
+                            }}
+                            className="text-red-500"
+                          />
+                        </Col>
+                      </Row>
+                    ))}
+                    <Button
+                      type="dashed"
+                      onClick={() => add({ quantity: 1, unitPrice: 0 })}
+                      icon={<PlusOutlined />}
+                      block
+                    >
+                      Adicionar Produto
+                    </Button>
+                  </>
+                )}
+              </Form.List>
+            </div>
 
             <Form.Item
               name="notes"

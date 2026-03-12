@@ -158,16 +158,30 @@ export default function Customers() {
     resetForm()
   }
 
+  const parseAddressFields = (address?: string) => {
+    if (!address) return {}
+    const cepMatch = address.match(/CEP:\s*([\d-]+)/)
+    const parts = address.split(', ')
+    return {
+      editAddressStreet: parts[0] || '',
+      editAddressNumber: parts[1]?.replace('nº ', '') || '',
+      editAddressComplement: parts[2] || '',
+      editAddressNeighborhood: parts[3] || '',
+      editAddressCity: parts[4] || '',
+      editAddressState: parts[5] || '',
+      editAddressZipCode: cepMatch ? cepMatch[1] : '',
+    }
+  }
+
   const handleViewDetails = (customer: Customer) => {
     setSelectedCustomer(customer)
     setIsEditing(false)
     setShowDetailsModal(true)
-    // Preencher formulário de edição com dados do cliente
     customerForm.setFieldsValue({
       name: customer.name,
       email: customer.email,
       phone: customer.phone,
-      address: customer.address,
+      ...parseAddressFields(customer.address),
     })
   }
 
@@ -182,7 +196,21 @@ export default function Customers() {
     if (!selectedCustomer) return
 
     try {
-      await apiService.updateCustomer(selectedCustomer.id, values)
+      const addressParts = []
+      if (values.editAddressStreet) addressParts.push(values.editAddressStreet)
+      if (values.editAddressNumber) addressParts.push(`nº ${values.editAddressNumber}`)
+      if (values.editAddressComplement) addressParts.push(values.editAddressComplement)
+      if (values.editAddressNeighborhood) addressParts.push(values.editAddressNeighborhood)
+      if (values.editAddressCity) addressParts.push(values.editAddressCity)
+      if (values.editAddressState) addressParts.push(values.editAddressState)
+      if (values.editAddressZipCode) addressParts.push(`CEP: ${values.editAddressZipCode}`)
+      const payload: any = {
+        name: values.name,
+        email: values.email,
+        phone: values.phone,
+      }
+      if (addressParts.length > 0) payload.address = addressParts.join(', ')
+      await apiService.updateCustomer(selectedCustomer.id, payload)
       message.success('Cliente atualizado com sucesso!')
       setIsEditing(false)
       
@@ -416,7 +444,7 @@ export default function Customers() {
                 name: record.name,
                 email: record.email,
                 phone: record.phone,
-                address: record.address,
+                ...parseAddressFields(record.address),
               })
             }}
             title="Editar Cliente"
@@ -755,7 +783,6 @@ export default function Customers() {
             <Form.Item
               name="petBreed"
               label="Raça"
-              rules={hasPet ? [{ required: true, message: 'Por favor, insira a raça' }] : []}
             >
               <Input placeholder="Digite a raça" size="large" />
             </Form.Item>
@@ -765,8 +792,16 @@ export default function Customers() {
             <Form.Item
               name="petAge"
               label="Idade (anos)"
+              rules={[{
+                validator: (_, value) => {
+                  if (value === undefined || value === null) return Promise.resolve()
+                  if (value < 0) return Promise.reject(new Error('Idade não pode ser negativa'))
+                  if (value > 50) return Promise.reject(new Error('Idade máxima é 50 anos'))
+                  return Promise.resolve()
+                }
+              }]}
             >
-              <InputNumber 
+              <InputNumber
                 className="w-full"
                 placeholder="0"
                 min={0}
@@ -778,11 +813,20 @@ export default function Customers() {
             <Form.Item
               name="petWeight"
               label="Peso (kg)"
+              rules={[{
+                validator: (_, value) => {
+                  if (value === undefined || value === null) return Promise.resolve()
+                  if (value < 0.01) return Promise.reject(new Error('Peso mínimo é 0.01 kg'))
+                  if (value > 500) return Promise.reject(new Error('Peso máximo é 500 kg'))
+                  return Promise.resolve()
+                }
+              }]}
             >
-              <InputNumber 
+              <InputNumber
                 className="w-full"
                 placeholder="0.0"
-                min={0}
+                min={0.01}
+                max={500}
                 step={0.1}
                 size="large"
               />
@@ -955,7 +999,7 @@ export default function Customers() {
 
         {/* Modal de Detalhes do Cliente */}
         <Modal
-          title="Detalhes do Cliente"
+          title={isEditing ? 'Editar Cliente' : 'Detalhes do Cliente'}
           open={showDetailsModal}
           onCancel={handleCloseDetails}
           footer={
@@ -1069,11 +1113,48 @@ export default function Customers() {
                         <Input size="large" prefix={<PhoneOutlined />} />
                       </Form.Item>
                       <Form.Item
-                        name="address"
-                        label="Endereço"
+                        name="editAddressZipCode"
+                        label="CEP"
                         className="md:col-span-2"
                       >
-                        <TextArea rows={2} />
+                        <Input size="large" placeholder="00000-000" />
+                      </Form.Item>
+                      <Form.Item
+                        name="editAddressStreet"
+                        label="Logradouro"
+                        className="md:col-span-2"
+                      >
+                        <Input size="large" placeholder="Rua, Avenida, etc" prefix={<EnvironmentOutlined />} />
+                      </Form.Item>
+                      <Form.Item
+                        name="editAddressNumber"
+                        label="Número"
+                      >
+                        <Input size="large" placeholder="000" />
+                      </Form.Item>
+                      <Form.Item
+                        name="editAddressComplement"
+                        label="Complemento"
+                      >
+                        <Input size="large" placeholder="Apto, Bloco, etc" />
+                      </Form.Item>
+                      <Form.Item
+                        name="editAddressNeighborhood"
+                        label="Bairro"
+                      >
+                        <Input size="large" placeholder="Bairro" />
+                      </Form.Item>
+                      <Form.Item
+                        name="editAddressCity"
+                        label="Cidade"
+                      >
+                        <Input size="large" placeholder="Cidade" />
+                      </Form.Item>
+                      <Form.Item
+                        name="editAddressState"
+                        label="UF"
+                      >
+                        <Input size="large" placeholder="UF" maxLength={2} />
                       </Form.Item>
                     </div>
                   </div>
@@ -1124,7 +1205,9 @@ export default function Customers() {
                     <div className="text-xs text-gray-500 mt-1">Pets cadastrados</div>
                   </div>
                   <div>
-                    <div className="text-2xl font-semibold text-gray-900">0</div>
+                    <div className="text-2xl font-semibold text-gray-900">
+                      {(selectedCustomer as any).appointments?.length ?? (selectedCustomer as any).appointmentsCount ?? 0}
+                    </div>
                     <div className="text-xs text-gray-500 mt-1">Agendamentos</div>
                   </div>
                   <div>

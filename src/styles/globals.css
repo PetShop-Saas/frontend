@@ -962,6 +962,78 @@
     color: var(--text-secondary) !important;
   }
 
+  /* Layout.tsx header and content dark mode overrides */
+  [data-theme='dark'] .ant-layout-header {
+    background: #1f2937 !important;
+    border-bottom-color: #374151 !important;
+  }
+
+  [data-theme='dark'] .page-transition {
+    background: #111827 !important;
+  }
+
+  /* Tailwind native inputs dark mode */
+  [data-theme='dark'] input:not([type='checkbox']):not([type='radio']):not(.ant-input):not([class*='ant-']),
+  [data-theme='dark'] textarea:not(.ant-input):not([class*='ant-']),
+  [data-theme='dark'] select:not(.ant-select):not([class*='ant-']) {
+    background-color: #374151 !important;
+    border-color: #4b5563 !important;
+    color: #f9fafb !important;
+  }
+
+  [data-theme='dark'] input::placeholder,
+  [data-theme='dark'] textarea::placeholder {
+    color: #9ca3af !important;
+  }
+
+  /* Utility classes dark overrides */
+  .dark .btn-secondary {
+    @apply bg-gray-700 text-gray-200 hover:bg-gray-600;
+  }
+
+  .dark .card {
+    @apply bg-gray-800;
+  }
+
+  .dark .card-header {
+    @apply border-gray-700;
+  }
+
+  /* Customers page — dark mode text and pagination visibility */
+  [data-theme='dark'] .text-gray-900 {
+    color: var(--text-primary) !important;
+  }
+
+  [data-theme='dark'] .text-gray-700 {
+    color: var(--text-secondary) !important;
+  }
+
+  [data-theme='dark'] .text-gray-600 {
+    color: var(--text-secondary) !important;
+  }
+
+  [data-theme='dark'] .text-gray-500 {
+    color: var(--text-secondary) !important;
+  }
+
+  [data-theme='dark'] .bg-white {
+    background-color: var(--bg-surface) !important;
+  }
+
+  [data-theme='dark'] .border-gray-200 {
+    border-color: var(--border-color) !important;
+  }
+
+  [data-theme='dark'] .ant-pagination-options .ant-select-selector {
+    background: var(--bg-elevated) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-primary) !important;
+  }
+
+  [data-theme='dark'] .ant-pagination-total-text {
+    color: var(--text-secondary) !important;
+  }
+
   /* Menu Grupos */
   .ant-menu-item-group-title {
     color: rgba(255, 255, 255, 0.45) !important;

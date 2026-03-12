@@ -19,8 +19,8 @@ export default function LandingHeader({ showAuthButtons = true }: LandingHeaderP
               <Image
                 src="/logo.png"
                 alt="PetFlow Logo"
-                width={48}
-                height={48}
+                width={56}
+                height={56}
                 className="rounded-lg"
                 priority
               />

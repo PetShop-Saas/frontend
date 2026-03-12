@@ -615,6 +615,7 @@ function getPageTitle(pathname: string): string {
     '/sales': 'Vendas',
     '/suppliers': 'Fornecedores',
     '/purchases': 'Compras',
+    '/operations': 'Operações',
     '/stock-movements': 'Movimentações de Estoque',
     '/stock-alerts': 'Alertas de Estoque',
     '/medical-records': 'Histórico Médico',

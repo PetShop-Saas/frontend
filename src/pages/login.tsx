@@ -64,8 +64,8 @@ export default function Login() {
               <Image
                 src="/logo.png"
                 alt="PetFlow Logo"
-                width={80}
-                height={80}
+                width={120}
+                height={120}
                 className="rounded-lg"
                 priority
               />

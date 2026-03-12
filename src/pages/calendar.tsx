@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { Calendar, momentLocalizer, Views } from 'react-big-calendar'
 import moment from 'moment'
+import 'moment/locale/pt-br'
 import { Modal, Form, Input, message, Select, Button, Tag, Avatar, Space, Popconfirm, DatePicker, TimePicker, Card, Divider, Row, Col } from 'antd'
 
 import { apiService, extractArrayFromResponse } from '../services/api'
@@ -367,8 +368,12 @@ export default function CalendarPage() {
                 date: 'Data',
                 time: 'Hora',
                 event: 'Evento',
+                allDay: 'Dia inteiro',
+                work_week: 'Semana útil',
+                yesterday: 'Ontem',
+                tomorrow: 'Amanhã',
                 noEventsInRange: 'Nenhum agendamento neste período',
-                showMore: total => `+${total} mais`
+                showMore: (total: number) => `+${total} mais`
               }}
               style={{ 
                 height: '100%',
@@ -413,7 +418,23 @@ export default function CalendarPage() {
               <Form.Item
                 name="time"
                 label="Horário"
-                rules={[{ required: true, message: 'Horário é obrigatório' }]}
+                rules={[
+                  { required: true, message: 'Horário é obrigatório' },
+                  {
+                    validator: (_, value) => {
+                      if (!value) return Promise.resolve()
+                      const hour = value.hour()
+                      const minute = value.minute()
+                      if (hour === 0 && minute === 0) {
+                        return Promise.reject(new Error('Horário 00:00 não é permitido'))
+                      }
+                      if (hour < 7 || (hour === 20 && minute > 0) || hour > 20) {
+                        return Promise.reject(new Error('Horário deve estar entre 07:00 e 20:00'))
+                      }
+                      return Promise.resolve()
+                    }
+                  }
+                ]}
               >
                 <TimePicker 
                   style={{ width: '100%' }}

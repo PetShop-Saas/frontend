@@ -123,7 +123,23 @@ export function AppointmentForm({
         <Form.Item
           name="dateTime"
           label="Data e Hora"
-          rules={[{ required: true, message: 'Selecione data e hora' }]}
+          rules={[
+            { required: true, message: 'Selecione data e hora' },
+            {
+              validator: (_, value) => {
+                if (!value) return Promise.resolve()
+                const hour = value.hour()
+                const minute = value.minute()
+                if (hour === 0 && minute === 0) {
+                  return Promise.reject(new Error('Horário 00:00 não é permitido'))
+                }
+                if (hour < 7 || (hour === 20 && minute > 0) || hour > 20) {
+                  return Promise.reject(new Error('Horário deve estar entre 07:00 e 20:00'))
+                }
+                return Promise.resolve()
+              }
+            }
+          ]}
         >
           <DatePicker
             showTime={{ format: 'HH:mm' }}

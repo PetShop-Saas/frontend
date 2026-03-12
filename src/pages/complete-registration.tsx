@@ -551,7 +551,7 @@ export default function CompleteRegistration() {
                       { type: 'email', message: 'Por favor, insira um e-mail válido' }
                     ]}
                   >
-                    <Input size="large" placeholder="seu@email.com" />
+                    <Input size="large" placeholder="seu@email.com" autoComplete="off" />
                   </Form.Item>
                 </Col>
               </Row>

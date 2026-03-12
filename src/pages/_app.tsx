@@ -42,7 +42,7 @@ function AppContent({ Component, pageProps }: AppProps) {
           colorError: '#ef4444',
           colorInfo: '#3b82f6',
           borderRadius: 8,
-          fontFamily: "'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
         },
       }}
     >

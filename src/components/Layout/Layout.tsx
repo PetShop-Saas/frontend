@@ -1,104 +1,67 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Image from 'next/image'
-import { Layout as AntLayout, Menu, Avatar, Dropdown, Button, Badge, Space, Typography } from 'antd'
+import { Layout as AntLayout, Menu, Avatar, Dropdown, Button, Badge, Space, Typography, Tooltip } from 'antd'
 import { usePageTransition } from '../../hooks/usePageTransition'
 import { usePermissions } from '../../hooks/usePermissions'
-import { 
-  DashboardOutlined, 
-  UserOutlined, 
-  TeamOutlined, 
-  CalendarOutlined, 
-  SettingOutlined, 
-  ShoppingOutlined, 
-  DollarOutlined, 
+import {
+  DashboardOutlined,
+  UserOutlined,
+  TeamOutlined,
+  CalendarOutlined,
+  SettingOutlined,
+  ShoppingOutlined,
+  DollarOutlined,
   BarChartOutlined,
   BellOutlined,
   LogoutOutlined,
   MenuFoldOutlined,
   MenuUnfoldOutlined,
   ShoppingCartOutlined,
-  WarningOutlined,
   ShopOutlined,
   FileTextOutlined,
   DatabaseOutlined,
   MedicineBoxOutlined,
-  AlertOutlined,
   MessageOutlined,
-  HeartOutlined, // Pet/Animal icon
-  BugOutlined, // Alternative pet icon
-  ThunderboltOutlined, // Alternative pet icon
-  UpOutlined,
-  DownOutlined,
+  HeartOutlined,
+  ThunderboltOutlined,
   ControlOutlined,
   BgColorsOutlined,
-  AppstoreOutlined
+  DownOutlined,
 } from '@ant-design/icons'
+import { useTheme } from '../../contexts/ThemeContext'
 
 interface LayoutProps {
   children: React.ReactNode
 }
 
-interface User {
-  id: string
-  email: string
-  name: string
-  role: string
-  tenantId: string
-  avatar?: string
-  tenant?: {
-    id: string
-    name: string
-    subdomain: string
-    isActive: boolean
-  }
-}
-
 const { Header, Sider, Content } = AntLayout
-const { Title } = Typography
 
 export default function Layout({ children }: LayoutProps) {
   const [collapsed, setCollapsed] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [tenantLogo, setTenantLogo] = useState<string>('')
   const router = useRouter()
-  const { isLoading, isTransitioning } = usePageTransition()
+  const { isTransitioning } = usePageTransition()
   const { canAccessSidebarItem } = usePermissions()
+  const { isDark } = useTheme()
 
   useEffect(() => {
     const token = localStorage.getItem('token')
-    if (!token) {
-      router.push('/login')
-      return
-    }
-
+    if (!token) { router.push('/login'); return }
     const userData = localStorage.getItem('user')
     if (userData) {
-      try {
-        const userObj = JSON.parse(userData)
-        setUser(userObj)
-      } catch (error) {
-      }
+      try { setUser(JSON.parse(userData)) } catch {}
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // router intencionalmente omitido para evitar loops infinitos
+  }, [])
 
   useEffect(() => {
-    if (user?.tenant) {
-      setTenantLogo('')
-    }
-    
-    const handleLogoUpdate = (event: CustomEvent) => {
-      setTenantLogo(event.detail)
-    }
-
+    if (user?.tenant) setTenantLogo('')
+    const handleLogoUpdate = (event: CustomEvent) => setTenantLogo(event.detail)
     window.addEventListener('logoUpdated', handleLogoUpdate as EventListener)
-
-    return () => {
-      window.removeEventListener('logoUpdated', handleLogoUpdate as EventListener)
-    }
+    return () => window.removeEventListener('logoUpdated', handleLogoUpdate as EventListener)
   }, [user])
-
 
   const handleLogout = () => {
     localStorage.removeItem('token')
@@ -107,49 +70,28 @@ export default function Layout({ children }: LayoutProps) {
     router.push('/login')
   }
 
-  // Definir todos os itens possíveis do menu organizados por categoria
   const allMenuItems: Array<{
-    key: string;
-    icon: React.ReactNode;
-    label: string;
-    category?: string;
+    key: string; icon: React.ReactNode; label: string; category?: string;
   }> = [
-    // PRINCIPAL
     { key: '/dashboard', icon: <DashboardOutlined />, label: 'Dashboard', category: 'core' },
     { key: '/customers', icon: <TeamOutlined />, label: 'Clientes', category: 'core' },
     { key: '/pets', icon: <HeartOutlined />, label: 'Pets', category: 'core' },
     { key: '/appointments', icon: <CalendarOutlined />, label: 'Agendamentos', category: 'core' },
     { key: '/calendar', icon: <CalendarOutlined />, label: 'Calendário', category: 'core' },
     { key: '/services', icon: <SettingOutlined />, label: 'Serviços', category: 'core' },
-    
-    // VENDAS
     { key: '/products', icon: <ShoppingOutlined />, label: 'Produtos', category: 'sales' },
     { key: '/sales', icon: <ShoppingCartOutlined />, label: 'Vendas', category: 'sales' },
-    
-    // ESTOQUE
     { key: '/suppliers', icon: <ShopOutlined />, label: 'Fornecedores', category: 'inventory' },
     { key: '/purchases', icon: <ShoppingOutlined />, label: 'Compras', category: 'inventory' },
-    
-    // MÉDICO
     { key: '/medical-records', icon: <MedicineBoxOutlined />, label: 'Histórico Médico', category: 'medical' },
-    
-    // HOTEL
     { key: '/hotel', icon: <HeartOutlined />, label: 'Hotel para Pets', category: 'hotel' },
-    
-    // FINANCEIRO
     { key: '/cash-flow', icon: <DollarOutlined />, label: 'Fluxo de Caixa', category: 'financial' },
-    { key: '/financial-reports', icon: <BarChartOutlined />, label: 'Relatórios Financeiros', category: 'financial' },
-    { key: '/billing', icon: <DollarOutlined />, label: 'Minha Assinatura', category: 'financial' },
-    
-    // COMUNICAÇÃO
+    { key: '/financial-reports', icon: <BarChartOutlined />, label: 'Relatórios', category: 'financial' },
+    { key: '/billing', icon: <DollarOutlined />, label: 'Assinatura', category: 'financial' },
     { key: '/communications', icon: <MessageOutlined />, label: 'Comunicação', category: 'communication' },
     { key: '/notifications', icon: <BellOutlined />, label: 'Notificações', category: 'communication' },
     { key: '/tickets', icon: <MessageOutlined />, label: 'Suporte', category: 'communication' },
-    
-    // OPERAÇÕES
     { key: '/operations', icon: <ThunderboltOutlined />, label: 'Operações', category: 'operations' },
-    
-    // ADMIN
     { key: '/admin-dashboard', icon: <DashboardOutlined />, label: 'Admin Dashboard', category: 'admin' },
     { key: '/admin-billing', icon: <DollarOutlined />, label: 'Gestão de Billing', category: 'admin' },
     { key: '/unified-access-management', icon: <ControlOutlined />, label: 'Gestão de Acesso', category: 'admin' },
@@ -159,440 +101,366 @@ export default function Layout({ children }: LayoutProps) {
     { key: '/settings', icon: <SettingOutlined />, label: 'Configurações', category: 'admin' },
   ]
 
-  // Construir menu agrupado por categorias
-  // Função para verificar se o usuário tem acesso a um item do sidebar
   const hasSidebarItem = (itemKey: string): boolean => {
     if (!user) return false
-    
-    // Verificar se o item está na lista de sidebar items permitidos
-    const hasSidebarAccess = canAccessSidebarItem(itemKey)
-    if (!hasSidebarAccess) return false
-    
-    // Verificar se o usuário tem a permissão necessária para acessar a rota
-    const requiredPermission = getRequiredPermission(itemKey)
-    if (!requiredPermission) return true // Se não precisa de permissão específica, permitir
-    
-    return true // Temporariamente sempre permitir acesso
-  }
-
-  // Função para obter a permissão necessária para uma rota
-  const getRequiredPermission = (pathname: string): string | null => {
-    const ROUTE_PERMISSIONS: Record<string, string> = {
-      '/dashboard': 'dashboard.read',
-      '/customers': 'customers.read',
-      '/pets': 'pets.read',
-      '/appointments': 'appointments.read',
-      '/calendar': 'appointments.calendar',
-      '/services': 'services.read',
-      '/products': 'products.read',
-      '/sales': 'sales.read',
-      '/suppliers': 'suppliers.read',
-      '/purchases': 'purchases.read',
-      '/stock-movements': 'stock-movements.read',
-      '/medical-records': 'medical-records.read',
-      '/hotel': 'hotel.read',
-      '/cash-flow': 'cash-flow.read',
-      '/financial-reports': 'financial-reports.read',
-      '/billing': 'billing.read',
-      '/communications': 'communications.read',
-      '/notifications': 'notifications.read',
-      '/tickets': 'tickets.read',
-      '/operations': 'operations.read',
-      '/admin-dashboard': 'admin.dashboard',
-      '/admin-billing': 'admin.billing',
-      '/unified-access-management': 'users.read',
-      '/personalization': 'admin.personalization',
-      '/audit-logs': 'audit.read',
-      '/backup': 'backup.read',
-    }
-    
-    return ROUTE_PERMISSIONS[pathname] || null
+    return canAccessSidebarItem(itemKey)
   }
 
   const buildGroupedMenu = () => {
     const grouped: any = {}
-    
     allMenuItems.forEach(item => {
       if (hasSidebarItem(item.key)) {
-        const category = item.category || 'other'
-        if (!grouped[category]) {
-          grouped[category] = []
-        }
-        grouped[category].push(item)
+        const cat = item.category || 'other'
+        if (!grouped[cat]) grouped[cat] = []
+        grouped[cat].push(item)
       }
     })
-    
+
+    const makeItems = (items: any[]) =>
+      items.map((item: any) => ({
+        key: item.key, icon: item.icon, label: item.label,
+        onClick: () => router.push(item.key),
+      }))
+
     const menuStructure: any[] = []
-    
-    // PRINCIPAL
-    if (grouped.core && grouped.core.length > 0) {
-      grouped.core.forEach((item: any) => {
-        menuStructure.push({
-          key: item.key,
-          icon: item.icon,
-          label: item.label,
-          onClick: () => router.push(item.key)
-        })
-      })
-    }
-    
-    // VENDAS
-    if (grouped.sales && grouped.sales.length > 0) {
-      menuStructure.push({ type: 'divider' })
-      menuStructure.push({
-        type: 'group',
-        label: 'VENDAS',
-        children: grouped.sales.map((item: any) => ({
-          key: item.key,
-          icon: item.icon,
-          label: item.label,
-          onClick: () => router.push(item.key)
-        }))
-      })
-    }
-    
-    // ESTOQUE
-    if (grouped.inventory && grouped.inventory.length > 0) {
-      menuStructure.push({ type: 'divider' })
-      menuStructure.push({
-        type: 'group',
-        label: 'ESTOQUE',
-        children: grouped.inventory.map((item: any) => ({
-          key: item.key,
-          icon: item.icon,
-          label: item.label,
-          onClick: () => router.push(item.key)
-        }))
-      })
-    }
-    
-    // MÉDICO
-    if (grouped.medical && grouped.medical.length > 0) {
-      menuStructure.push({ type: 'divider' })
-      menuStructure.push({
-        type: 'group',
-        label: 'VETERINÁRIO',
-        children: grouped.medical.map((item: any) => ({
-          key: item.key,
-          icon: item.icon,
-          label: item.label,
-          onClick: () => router.push(item.key)
-        }))
-      })
-    }
-    
-    // HOTEL
-    if (grouped.hotel && grouped.hotel.length > 0) {
-      menuStructure.push({ type: 'divider' })
-      menuStructure.push({
-        type: 'group',
-        label: 'HOTEL',
-        children: grouped.hotel.map((item: any) => ({
-          key: item.key,
-          icon: item.icon,
-          label: item.label,
-          onClick: () => router.push(item.key)
-        }))
-      })
-    }
-    
-    // FINANCEIRO
-    if (grouped.financial && grouped.financial.length > 0) {
-      menuStructure.push({ type: 'divider' })
-      menuStructure.push({
-        type: 'group',
-        label: 'FINANCEIRO',
-        children: grouped.financial.map((item: any) => ({
-          key: item.key,
-          icon: item.icon,
-          label: item.label,
-          onClick: () => router.push(item.key)
-        }))
-      })
-    }
-    
-    // COMUNICAÇÃO
-    if (grouped.communication && grouped.communication.length > 0) {
-      menuStructure.push({ type: 'divider' })
-      menuStructure.push({
-        type: 'group',
-        label: 'COMUNICAÇÃO',
-        children: grouped.communication.map((item: any) => ({
-          key: item.key,
-          icon: item.icon,
-          label: item.label,
-          onClick: () => router.push(item.key)
-        }))
-      })
-    }
-    
-    // OPERAÇÕES
-    if (grouped.operations && grouped.operations.length > 0) {
-      menuStructure.push({ type: 'divider' })
-      menuStructure.push({
-        type: 'group',
-        label: 'OPERAÇÕES',
-        children: grouped.operations.map((item: any) => ({
-          key: item.key,
-          icon: item.icon,
-          label: item.label,
-          onClick: () => router.push(item.key)
-        }))
-      })
-    }
-    
-    // ADMIN
-    // Verificar se é admin pelo role OU planRole
+    const groups = [
+      { key: 'core', label: null },
+      { key: 'sales', label: 'Vendas' },
+      { key: 'inventory', label: 'Estoque' },
+      { key: 'medical', label: 'Veterinário' },
+      { key: 'hotel', label: 'Hotel' },
+      { key: 'financial', label: 'Financeiro' },
+      { key: 'communication', label: 'Comunicação' },
+      { key: 'operations', label: 'Operações' },
+    ]
+
+    groups.forEach(({ key, label }) => {
+      if (!grouped[key]?.length) return
+      if (label) {
+        if (menuStructure.length > 0) menuStructure.push({ type: 'divider' })
+        menuStructure.push({ type: 'group', label, children: makeItems(grouped[key]) })
+      } else {
+        makeItems(grouped[key]).forEach(i => menuStructure.push(i))
+      }
+    })
+
     const isAdmin = user?.role === 'ADMIN' || user?.planRole === 'ADMIN'
-    if (grouped.admin && grouped.admin.length > 0 && isAdmin) {
+    if (grouped.admin?.length && isAdmin) {
       menuStructure.push({ type: 'divider' })
-      menuStructure.push({
-        type: 'group',
-        label: 'ADMINISTRAÇÃO',
-        children: grouped.admin.map((item: any) => ({
-          key: item.key,
-          icon: item.icon,
-          label: item.label,
-          onClick: () => router.push(item.key)
-        }))
-      })
+      menuStructure.push({ type: 'group', label: 'Administração', children: makeItems(grouped.admin) })
     }
-    
+
     return menuStructure
   }
-  
+
   const menuItems = buildGroupedMenu()
 
   const userMenuItems = [
-    {
-      key: 'profile',
-      icon: <UserOutlined />,
-      label: 'Perfil',
-    },
-    {
-      type: 'divider' as const,
-    },
-    {
-      key: 'logout',
-      icon: <LogoutOutlined />,
-      label: 'Sair',
-      onClick: handleLogout,
-    },
+    { key: 'profile', icon: <UserOutlined />, label: 'Meu Perfil' },
+    { type: 'divider' as const },
+    { key: 'logout', icon: <LogoutOutlined />, label: 'Sair', onClick: handleLogout },
   ]
+
+  const sidebarWidth = 252
+  const collapsedWidth = 72
+
+  const headerBg = isDark
+    ? 'rgba(17, 24, 39, 0.97)'
+    : 'rgba(255, 255, 255, 0.97)'
+
+  const contentBg = isDark ? '#0b1120' : '#f4f6f9'
 
   return (
     <AntLayout style={{ height: '100vh', overflow: 'hidden' }}>
-      <Sider 
-        trigger={null} 
-        collapsible 
+      {/* ─── Sidebar ─── */}
+      <Sider
+        trigger={null}
+        collapsible
         collapsed={collapsed}
         className="custom-sidebar"
         style={{
-          background: '#064e3b',
+          background: '#042f1e',
           height: '100vh',
           overflow: 'auto',
           position: 'fixed',
           left: 0,
           top: 0,
           bottom: 0,
+          zIndex: 1001,
+          boxShadow: '2px 0 20px rgba(0,0,0,0.3)',
         }}
-        width={256}
+        width={sidebarWidth}
+        collapsedWidth={collapsedWidth}
       >
-        {/* Banner do tenant */}
-        <div style={{ 
-          width: '100%',
-          height: collapsed ? 60 : 80,
-          margin: collapsed ? '8px 0' : '16px 0',
+        {/* Brand / Logo area */}
+        <div style={{
+          padding: collapsed ? '16px 0' : '20px 16px 16px',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          background: 'transparent',
-          position: 'relative'
+          gap: 10,
+          borderBottom: '1px solid rgba(255,255,255,0.07)',
+          marginBottom: 8,
+          minHeight: collapsed ? 72 : 80,
+          justifyContent: collapsed ? 'center' : 'flex-start',
         }}>
           {tenantLogo ? (
-            <Image 
-              src={tenantLogo} 
-              alt={`Banner ${user?.tenant?.name || 'PetFlow'}`}
-              width={collapsed ? 60 : 240}
-              height={collapsed ? 60 : 80}
+            <Image
+              src={tenantLogo}
+              alt="Logo"
+              width={collapsed ? 36 : 36}
+              height={collapsed ? 36 : 36}
               unoptimized
-              style={{ 
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                borderRadius: collapsed ? 4 : 8
-              }} 
-              onError={() => {
-                setTenantLogo('')
-              }}
+              style={{ borderRadius: 8, objectFit: 'cover', flexShrink: 0 }}
+              onError={() => setTenantLogo('')}
             />
           ) : (
             <div style={{
-              width: '100%',
-              height: '100%',
-              background: 'rgba(255,255,255,0.1)',
-              borderRadius: collapsed ? 4 : 8,
+              width: 36,
+              height: 36,
+              background: 'linear-gradient(135deg, #10b981, #047857)',
+              borderRadius: 9,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: collapsed ? 12 : 16,
-              fontWeight: 'bold',
+              fontSize: 15,
+              fontWeight: 800,
               color: 'white',
-              textAlign: 'center',
-              padding: '8px'
+              flexShrink: 0,
+              letterSpacing: '-0.5px',
+              fontFamily: "'Outfit', sans-serif",
+              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.35)',
             }}>
-              {collapsed ? 'PS' : (user?.tenant?.name || 'PetFlow').toUpperCase()}
+              {collapsed
+                ? (user?.tenant?.name?.charAt(0) || 'P')
+                : (user?.tenant?.name?.slice(0, 2) || 'PF').toUpperCase()}
+            </div>
+          )}
+
+          {!collapsed && (
+            <div style={{ overflow: 'hidden', flex: 1 }}>
+              <div style={{
+                fontSize: 14,
+                fontWeight: 700,
+                color: 'white',
+                lineHeight: 1.2,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                fontFamily: "'Outfit', sans-serif",
+              }}>
+                {user?.tenant?.name || 'PetFlow'}
+              </div>
+              <div style={{
+                fontSize: 11,
+                color: 'rgba(255,255,255,0.4)',
+                fontWeight: 500,
+                marginTop: 2,
+              }}>
+                {user?.role === 'ADMIN' ? 'Administrador' : 'Usuário'}
+              </div>
             </div>
           )}
         </div>
-        
+
+        {/* Navigation menu */}
         <Menu
           theme="dark"
           mode="inline"
           selectedKeys={[router.pathname]}
           items={menuItems}
           onClick={({ key }) => router.push(key)}
-          style={{ 
+          inlineIndent={16}
+          style={{
             border: 'none',
-            background: '#064e3b'
+            background: 'transparent',
+            padding: '0 0 24px',
           }}
           className="custom-sidebar-menu"
-          expandIcon={({ isOpen }) => (
-            <span style={{ 
-              fontSize: '10px', 
-              opacity: 0.6,
-              color: 'rgba(255, 255, 255, 0.7)'
-            }}>
-              {isOpen ? '▲' : '▼'}
-            </span>
-          )}
         />
       </Sider>
-      
-      <AntLayout style={{ marginLeft: collapsed ? 80 : 256, transition: 'margin-left 0.2s' }}>
-        <Header 
+
+      {/* ─── Main layout ─── */}
+      <AntLayout style={{
+        marginLeft: collapsed ? collapsedWidth : sidebarWidth,
+        transition: 'margin-left 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
+        background: contentBg,
+      }}>
+        {/* ─── Header ─── */}
+        <Header
           className={collapsed ? 'collapsed' : ''}
           style={{
             padding: '0 24px',
-            background: '#f9fafb',
+            background: headerBg,
+            backdropFilter: 'blur(12px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-            borderBottom: '1px solid #e5e7eb',
+            boxShadow: isDark
+              ? '0 1px 0 rgba(255,255,255,0.05), 0 2px 12px rgba(0,0,0,0.3)'
+              : '0 1px 0 rgba(0,0,0,0.06), 0 2px 12px rgba(0,0,0,0.05)',
             position: 'fixed',
             top: 0,
             right: 0,
-            left: collapsed ? 80 : 256,
+            left: collapsed ? collapsedWidth : sidebarWidth,
             zIndex: 1000,
-            transition: 'left 0.2s',
-            height: '64px',
-            lineHeight: '64px'
+            transition: 'left 0.22s cubic-bezier(0.4, 0, 0.2, 1)',
+            height: 64,
+            lineHeight: '64px',
+            borderBottom: `1px solid ${isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)'}`,
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <Button
-              type="text"
-              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-              onClick={() => setCollapsed(!collapsed)}
-              style={{ fontSize: 16, width: 64, height: 64 }}
-            />
-            
-            {/* Nome do tenant no header */}
-            {user?.tenant?.name && (
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: 8,
-                padding: '4px 12px',
-                background: 'rgba(4, 120, 87, 0.1)',
-                borderRadius: 6,
-                border: '1px solid rgba(4, 120, 87, 0.2)'
+          {/* Left: toggle + breadcrumb */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Tooltip title={collapsed ? 'Expandir menu' : 'Recolher menu'} placement="right">
+              <Button
+                type="text"
+                icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                onClick={() => setCollapsed(!collapsed)}
+                style={{
+                  fontSize: 16,
+                  width: 40,
+                  height: 40,
+                  borderRadius: 8,
+                  color: isDark ? 'rgba(255,255,255,0.6)' : '#6b7280',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              />
+            </Tooltip>
+
+            {/* Page title */}
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <span style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: isDark ? '#f1f5f9' : '#111827',
+                fontFamily: "'Outfit', sans-serif",
+                lineHeight: 1.2,
               }}>
-                <span style={{ 
-                  fontSize: 14, 
-                  fontWeight: 600, 
-                  color: '#047857' 
-                }}>
-                  {user.tenant.name}
-                </span>
-              </div>
-            )}
-            
-            <Title level={4} style={{ margin: 0 }}>
-              {getPageTitle(router.pathname)}
-            </Title>
+                {getPageTitle(router.pathname)}
+              </span>
+            </div>
           </div>
-          
-          <Space size="middle">
-            <Badge count={3} size="small">
-              <Button type="text" icon={<BellOutlined />} size="large" />
-            </Badge>
-            
+
+          {/* Right: notifications + user */}
+          <Space size={8} style={{ alignItems: 'center' }}>
+            {/* Notifications */}
+            <Tooltip title="Notificações">
+              <Badge count={3} size="small" offset={[-2, 2]}>
+                <Button
+                  type="text"
+                  icon={<BellOutlined />}
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 8,
+                    fontSize: 17,
+                    color: isDark ? 'rgba(255,255,255,0.55)' : '#6b7280',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                />
+              </Badge>
+            </Tooltip>
+
+            {/* Divider */}
+            <div style={{
+              width: 1,
+              height: 28,
+              background: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+              margin: '0 4px',
+            }} />
+
+            {/* User dropdown */}
             <Dropdown
-              menu={{ 
+              menu={{
                 items: userMenuItems,
-                onClick: ({ key }) => {
-                  if (key === 'profile') {
-                    router.push('/profile')
-                  }
-                }
+                onClick: ({ key }) => { if (key === 'profile') router.push('/profile') },
+                style: { minWidth: 180 },
               }}
               placement="bottomRight"
-              arrow
+              trigger={['click']}
             >
-              <Space style={{ cursor: 'pointer', alignItems: 'center' }}>
-                <Avatar 
-                  style={{ backgroundColor: '#047857' }}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 9,
+                cursor: 'pointer',
+                padding: '5px 8px 5px 5px',
+                borderRadius: 10,
+                border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.07)'}`,
+                background: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)',
+                transition: 'all 0.15s',
+              }}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLElement).style.background = isDark
+                    ? 'rgba(255,255,255,0.07)'
+                    : 'rgba(0,0,0,0.04)'
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLElement).style.background = isDark
+                    ? 'rgba(255,255,255,0.04)'
+                    : 'rgba(0,0,0,0.02)'
+                }}
+              >
+                <Avatar
+                  size={30}
+                  style={{
+                    background: 'linear-gradient(135deg, #10b981, #047857)',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    fontFamily: "'Outfit', sans-serif",
+                    flexShrink: 0,
+                  }}
                 >
-                  {user?.name?.charAt(0) || 'U'}
+                  {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                 </Avatar>
-                <div style={{ 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  alignItems: 'flex-start',
-                  justifyContent: 'center',
-                  lineHeight: '1.2'
-                }}>
-                  <span style={{ 
-                    fontSize: 14, 
-                    fontWeight: 500,
-                    color: '#374151',
-                    marginBottom: '2px'
+                <div style={{ display: 'flex', flexDirection: 'column', lineHeight: 1.25 }}>
+                  <span style={{
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: isDark ? '#f1f5f9' : '#111827',
+                    whiteSpace: 'nowrap',
+                    maxWidth: 120,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
                   }}>
                     {user?.name || 'Usuário'}
                   </span>
-                  <span style={{ 
-                    fontSize: 12, 
-                    color: '#6b7280',
-                    lineHeight: '1'
+                  <span style={{
+                    fontSize: 11,
+                    color: isDark ? 'rgba(255,255,255,0.4)' : '#9ca3af',
+                    whiteSpace: 'nowrap',
+                    maxWidth: 120,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
                   }}>
-                    {user?.email || 'user@email.com'}
+                    {user?.email || ''}
                   </span>
                 </div>
-              </Space>
+                <DownOutlined style={{
+                  fontSize: 10,
+                  color: isDark ? 'rgba(255,255,255,0.3)' : '#d1d5db',
+                  marginLeft: 2,
+                }} />
+              </div>
             </Dropdown>
           </Space>
         </Header>
-        
-        <Content style={{ 
-          margin: '24px 16px', 
-          padding: 0, 
-          background: 'transparent', 
-          borderRadius: 8,
-          minHeight: 'calc(100vh - 112px)',
-          marginTop: '88px',
-          overflowY: 'auto'
+
+        {/* ─── Content ─── */}
+        <Content style={{
+          marginTop: 64,
+          padding: '24px',
+          background: contentBg,
+          minHeight: 'calc(100vh - 64px)',
+          overflowY: 'auto',
         }}>
-          <div 
+          <div
             className={`page-transition ${isTransitioning ? 'page-enter' : ''}`}
-            style={{
-              minHeight: '100%',
-              position: 'relative',
-              background: '#fff',
-              borderRadius: 8,
-              padding: 24
-            }}
+            style={{ minHeight: '100%', position: 'relative' }}
           >
             {children}
           </div>
@@ -610,6 +478,7 @@ function getPageTitle(pathname: string): string {
     '/customers': 'Clientes',
     '/pets': 'Pets',
     '/appointments': 'Agendamentos',
+    '/calendar': 'Calendário',
     '/services': 'Serviços',
     '/products': 'Produtos',
     '/sales': 'Vendas',
@@ -631,6 +500,7 @@ function getPageTitle(pathname: string): string {
     '/backup': 'Backup & Restore',
     '/settings': 'Configurações',
     '/profile': 'Perfil',
+    '/personalization': 'Personalização',
   }
   return titles[pathname] || 'PetFlow'
 }

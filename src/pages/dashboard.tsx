@@ -8,20 +8,10 @@ import {
   DollarOutlined,
   ReloadOutlined,
 } from '@ant-design/icons'
-import dynamic from 'next/dynamic'
 import { apiService } from '../services/api'
 import { DashboardSkeleton } from '../components/common/PageSkeleton'
 import EmptyState from '../components/common/EmptyState'
 import { useTheme } from '../contexts/ThemeContext'
-import type { RevenueDataPoint } from '../components/charts/RevenueChart'
-import type { AppointmentStatusData } from '../components/charts/AppointmentsPieChart'
-import type { TopProductData } from '../components/charts/TopProductsChart'
-import type { MonthlyComparisonData } from '../components/charts/MonthlyComparisonChart'
-
-const RevenueChart = dynamic(() => import('../components/charts/RevenueChart'), { ssr: false })
-const AppointmentsPieChart = dynamic(() => import('../components/charts/AppointmentsPieChart'), { ssr: false })
-const TopProductsChart = dynamic(() => import('../components/charts/TopProductsChart'), { ssr: false })
-const MonthlyComparisonChart = dynamic(() => import('../components/charts/MonthlyComparisonChart'), { ssr: false })
 
 interface User {
   id: string
@@ -44,45 +34,9 @@ interface DashboardStats {
   }>
 }
 
-interface ChartData {
-  revenue: RevenueDataPoint[]
-  appointmentsByStatus: AppointmentStatusData[]
-  topProducts: TopProductData[]
-  monthlyComparison: MonthlyComparisonData[]
-}
-
-function buildFallbackChartData(): ChartData {
-  const today = new Date()
-  const revenue: RevenueDataPoint[] = Array.from({ length: 30 }, (_, i) => {
-    const d = new Date(today)
-    d.setDate(today.getDate() - (29 - i))
-    return {
-      date: d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }),
-      revenue: 0,
-    }
-  })
-  return {
-    revenue,
-    appointmentsByStatus: [
-      { status: 'PENDING', count: 0 },
-      { status: 'CONFIRMED', count: 0 },
-      { status: 'COMPLETED', count: 0 },
-      { status: 'CANCELLED', count: 0 },
-    ],
-    topProducts: [],
-    monthlyComparison: [
-      { week: 'Sem 1', currentMonth: 0, previousMonth: 0 },
-      { week: 'Sem 2', currentMonth: 0, previousMonth: 0 },
-      { week: 'Sem 3', currentMonth: 0, previousMonth: 0 },
-      { week: 'Sem 4', currentMonth: 0, previousMonth: 0 },
-    ],
-  }
-}
-
 export default function Dashboard() {
   const [user, setUser] = useState<User | null>(null)
   const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [chartData, setChartData] = useState<ChartData>(buildFallbackChartData())
   const [loading, setLoading] = useState(true)
   const router = useRouter()
   const { Title, Text } = Typography
@@ -110,9 +64,8 @@ export default function Dashboard() {
         .toISOString().slice(0, 10)
       const endOfMonth = today.toISOString().slice(0, 10)
 
-      const [dashboardStats, chartsResult, cashFlowBalance] = await Promise.allSettled([
+      const [dashboardStats, cashFlowBalance] = await Promise.allSettled([
         apiService.getDashboardStats(),
-        apiService.getDashboardCharts(),
         apiService.getCashFlowBalance(startOfMonth, endOfMonth),
       ])
 
@@ -125,17 +78,6 @@ export default function Dashboard() {
         setStats(statsData)
       } else {
         message.error('Erro ao carregar dados do dashboard. Tente novamente.')
-      }
-
-      if (chartsResult.status === 'fulfilled' && chartsResult.value) {
-        const raw = chartsResult.value as Partial<ChartData>
-        const fallback = buildFallbackChartData()
-        setChartData({
-          revenue: raw.revenue ?? fallback.revenue,
-          appointmentsByStatus: raw.appointmentsByStatus ?? fallback.appointmentsByStatus,
-          topProducts: raw.topProducts ?? fallback.topProducts,
-          monthlyComparison: raw.monthlyComparison ?? fallback.monthlyComparison,
-        })
       }
     } finally {
       setLoading(false)
@@ -224,26 +166,6 @@ export default function Dashboard() {
                 }
               />
             </Card>
-          </Col>
-        </Row>
-
-        {/* Charts Row 1: Receita 30 dias + Agendamentos por Status */}
-        <Row gutter={[16, 16]}>
-          <Col xs={24} lg={14}>
-            <RevenueChart data={chartData.revenue} />
-          </Col>
-          <Col xs={24} lg={10}>
-            <AppointmentsPieChart data={chartData.appointmentsByStatus} />
-          </Col>
-        </Row>
-
-        {/* Charts Row 2: Top Produtos + Comparativo Mensal */}
-        <Row gutter={[16, 16]}>
-          <Col xs={24} lg={12}>
-            <TopProductsChart data={chartData.topProducts} />
-          </Col>
-          <Col xs={24} lg={12}>
-            <MonthlyComparisonChart data={chartData.monthlyComparison} />
           </Col>
         </Row>
 
